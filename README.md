@@ -64,11 +64,11 @@ CI runs both on every pull request (`.github/workflows/check.yml`). Besides the
 schema and the cross-concept rules in `FORMAT.md`, this repository requires
 `license: CC0-1.0` in every file, no `bindings` or `models` (they belong to
 datasets), no meaning file outside the root, and no label or synonym shared by
-two concepts unless one is a kind of the other.
+two concepts in a language unless one is a kind of the other.
 
 `scripts/lib/meaning.mjs` and `scripts/lib/modelspec.mjs` are byte-for-byte
 copies of the checker in [`datatug/chinookdb`](https://github.com/datatug/chinookdb)
-(`scripts/lib/`, branch `core-switch` at `04c98f0829f89a6269e0add41a3c852740ffd8c8`),
+(`scripts/lib/`, commit `ae1f505db35fcecf1ff16c8ba3dbb293b7d50dda`),
 which checks its own meaning file with the same code. They are copied rather
 than imported because the checker has no package of its own yet and chinookdb
 reads this repository at a pinned commit, so a dependency the other way would be

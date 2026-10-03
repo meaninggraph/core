@@ -42,7 +42,11 @@ extends: meaning://github.com/meaninggraph/core/invoice?ref=<40-character commit
 
 - A tool resolves the reference by fetching that commit of
   `https://{host}/{org}/{repo}` and reading the `*.meaning.yaml` files in its
-  root. A commit never changes, so a result can be cached under its id.
+  root. A commit never changes, so a result can be cached under its id. A tool
+  may restrict which sources it fetches (an allow-list of hosts or
+  repositories, say) and report the rest as unresolvable; the grammar accepts
+  any `{host}` followed by one or more path segments before the concept id,
+  deeper paths included.
 - All references from one repository to another carry the **same** pin, across
   all the referring repository's files: the repository then reads one version
   of the other (as a `go.mod` does). Two pins, or a pinned and an unpinned
@@ -53,7 +57,11 @@ extends: meaning://github.com/meaninggraph/core/invoice?ref=<40-character commit
   re-run the checks.
 - A reference to the repository's own address
   (`meaning://github.com/meaninggraph/core/person` inside this repository) is
-  the same as the bare id and cannot carry `?ref=`.
+  the same as the bare id and cannot carry `?ref=`. This holds when another
+  repository reads that one too: inside a pinned repository, a reference to its
+  own address (without `?ref=`) names a concept of that same pinned version, so
+  inheritance, cycles and ratios follow it. Within a repository, prefer bare
+  ids.
 - Concept ids in a published repository never change meaning. A different
   meaning is a new id; a retired concept is deprecated, not deleted, so pinned
   references keep resolving.
@@ -105,8 +113,9 @@ number computed over many instances). Where data comes from is provenance
   extends an entity, a measure a measure, an attribute or a dimension an
   attribute or a dimension. A chain of `extends` may not return to a concept it
   passed (checked through any repository the chain reaches). It inherits
-  synonyms (the parent's labels count as synonyms), `unit`, `values-of` and
-  `units-of`, each only when the concept has none of its own. It never inherits
+  synonyms (the parent's labels count as synonyms), `unit`, `values-of`,
+  `units-of` and a measure's `aggregation`, each only when the concept has none
+  of its own. It never inherits
   `values`: an entity that extends another is not a list of its parent's
   instances.
 - **`values-of`**: the values of this attribute or dimension are instances of
@@ -131,7 +140,10 @@ number computed over many instances). Where data comes from is provenance
 - `aggregation` (`sum`, `count`, `average`, `min`, `max`, `none`) says how
   values combine when grouped. **When it is absent it means `none`**: a tool
   must not combine the values across groups; it may list them. State `sum` for
-  a measure that adds up.
+  a measure that adds up. A measure that extends another and states no
+  aggregation of its own **inherits the nearest one** along `extends`, as
+  `unit` does (it means `none` only when no measure on the chain states one),
+  so a ratio that extends a measure which sums must say `aggregation: none`.
 - A **ratio** is a measure with a measure among its inputs, or one that extends
   a ratio. A ratio is recomputed per group from its inputs, so `sum`, `count`
   and `average` on one is an error; `none` (or absent), `min` and `max` are
@@ -143,13 +155,15 @@ number computed over many instances). Where data comes from is provenance
   error naming both files.
 - Value ids are unique within a concept.
 - One word does not name two values of a concept: a label or alias, compared
-  ignoring case within a language, may appear on only one value.
+  ignoring case and **across languages** (values are matched in any language),
+  may appear on only one value. One value may repeat its own word.
 - Source ids are unique within a file, and a concept's `source` names a source
   declared in the **same file**.
 - Binding roles: a concept has at most one `entity` binding (see below).
 
 Whether two concepts may share a synonym is not part of the format. This
-repository does not allow it, unless one concept is a kind of the other.
+repository does not allow it within a language, unless one concept is a kind of
+the other; a language counts when the concept has a label or synonyms in it.
 
 ## Words: synonyms and aliases
 
@@ -211,8 +225,10 @@ name to source path, relative to the file).
 7. a unit that does not name exactly one value of its `units-of` entity;
 8. `inputs` that are not attributes or measures; `dimensions` that are not
    dimensions or attributes;
-9. `sum`, `count` or `average` on a ratio;
-10. a duplicate concept id, value id, source id, or a word naming two values;
+9. `sum`, `count` or `average` on a ratio, stated or inherited through
+   `extends`;
+10. a duplicate concept id, value id, source id, or a word naming two values
+    (in any language);
 11. a `source` that is not declared in the file;
 12. a binding to an unlisted module, a missing entity or property, another
     repository, or one whose role does not fit the model.

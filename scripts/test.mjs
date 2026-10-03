@@ -53,10 +53,20 @@ test('a rule across concepts fails', () => {
   assert.match(problemsOf((files) => { concept(files, 'person').extends = 'meaning://github.com/meaninggraph/core/person'; }), /extends forms a cycle \(person -> person\)/, 'a cycle through the repository\'s own address');
 });
 
+test('a measure inherits its aggregation through extends, and a ratio may not inherit a sum', () => {
+  const ratioOfRevenue = (aggregation) => (files) => {
+    files['statistics.meaning.yaml'].concepts.push({ id: 'revenue-per-capita', kind: 'measure', extends: 'revenue', labels: { en: 'Revenue per capita' }, description: 'Revenue divided by the population.', measure: { formula: 'x / y', inputs: ['per-capita'], ...(aggregation && { aggregation }) } });
+  };
+  assert.match(problemsOf(ratioOfRevenue()), /concept revenue-per-capita: aggregation sum on a ratio \(it is computed from the measure per-capita\).*sum is inherited from revenue, state aggregation: none/);
+  assert.equal(problemsOf(ratioOfRevenue('none')), '', 'its own none overrides the inherited sum');
+  assert.equal(problemsOf((files) => { files['statistics.meaning.yaml'].concepts.push({ id: 'online-revenue', kind: 'measure', extends: 'revenue', labels: { en: 'Online revenue' }, description: 'Revenue from online sales.', measure: { formula: 'x' } }); }), '', 'a kind of a summing measure that is no ratio sums');
+});
+
 test('ids and values must be unique', () => {
   assert.match(problemsOf((files) => { files['calendar.meaning.yaml'].concepts.push({ ...concept(files, 'country') }); }), /concept country is declared twice \(calendar.meaning.yaml and geo.meaning.yaml\)/);
   assert.match(problemsOf((files) => { const us = concept(files, 'country').values.find((v) => v.id === 'us'); concept(files, 'country').values.push({ ...us }); }), /value us is declared twice/);
   assert.match(problemsOf((files) => { concept(files, 'country').values.find((v) => v.id === 'gb').aliases.en.push('USA'); }), /"USA" names both gb and us|"USA" names both us and gb/);
+  assert.match(problemsOf((files) => { concept(files, 'country').values.find((v) => v.id === 'gb').aliases.ru = ['USA']; }), /"(USA|usa)" names both (us and gb|gb and us)/, 'a word names one value whatever the language');
   assert.match(problemsOf((files) => { files['geo.meaning.yaml'].sources = [{ id: 's', provider: 'p', dataset: 'd' }, { id: 's', provider: 'q', dataset: 'e' }]; }), /source s is declared twice/);
 });
 
@@ -67,6 +77,8 @@ test('the rules of this repository fail: licence, bindings, models, hidden files
   assert.match(problemsOf((files) => { files['geo.meaning.yaml'].models = { x: 'x.hcl' }; }), /models belong in a dataset repository/);
   assert.match(problemsOf((files) => { concept(files, 'person').synonyms.en.push('people'); concept(files, 'population').synonyms.en.push('people'); }), /concept person: "people" \(en\) is also a word of concept population; one word must name one concept/);
   assert.equal(problemsOf((files) => { concept(files, 'employee').synonyms.en.push('individual'); }), '', 'a kind of a concept may share its parent\'s words');
+  assert.equal(problemsOf((files) => { concept(files, 'employee').extends = 'meaning://github.com/meaninggraph/core/person'; concept(files, 'employee').synonyms.en.push('individual'); }), '', 'also when the parent is written with the repository\'s own address');
+  assert.match(problemsOf((files) => { concept(files, 'person').synonyms.de = ['Leute']; concept(files, 'population').synonyms.de = ['Leute']; }), /concept person: "Leute" \(de\) is also a word of concept population/, 'a language with synonyms but no label counts');
   assert.match(problemsOf((files, dir) => { mkdirSync(join(dir, 'more')); writeFileSync(join(dir, 'more', 'extra.meaning.yaml'), 'format: meaning/draft-1\n'); }), /more\/extra.meaning.yaml: meaning files are read from the repository root only/);
   const none = variant((files) => { for (const name of Object.keys(files)) files[name] = null; });
   assert.match(checkCore(none).problems.join('\n'), /no \*.meaning.yaml file in the repository root/);

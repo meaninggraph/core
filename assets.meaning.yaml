@@ -35,7 +35,7 @@ concepts:
       - id: gbp
         labels: {en: Pound sterling, ru: Фунт стерлингов}
         aliases:
-          en: [GBP, pounds sterling, sterling, £]
+          en: [GBP, pounds sterling, sterling]
           ru: [фунты стерлингов]
         codes: {alpha: GBP, numeric: "826"}
 

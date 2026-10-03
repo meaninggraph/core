@@ -31,7 +31,7 @@ function hiddenMeaningFiles(dir, prefix = '') {
 }
 
 export function checkCore(dir = root) {
-  const local = loadMeaningDir(dir);
+  const local = loadMeaningDir(dir, coreRepo);
   const resolve = createResolver({ root: dir, sources: {} });
   const rel = (path) => relative(dir, path);
   const problems = [];
@@ -47,11 +47,12 @@ export function checkCore(dir = root) {
     }
   }
   // One word names one concept: a label or synonym that two concepts share in a
-  // language is ambiguous, unless one concept is a kind of the other.
+  // language is ambiguous, unless one concept is a kind of the other. A
+  // language counts when the concept has a label or synonyms in it.
   const owners = new Map();
   for (const { concept, path } of local.concepts.values()) {
-    for (const [language, label] of Object.entries(concept.labels ?? {})) {
-      for (const word of [label, ...(concept.synonyms?.[language] ?? [])]) {
+    for (const language of new Set([...Object.keys(concept.labels ?? {}), ...Object.keys(concept.synonyms ?? {})])) {
+      for (const word of [concept.labels?.[language], ...(concept.synonyms?.[language] ?? [])].filter(Boolean)) {
         const key = `${language}:${word.toLowerCase()}`;
         for (const other of owners.get(key) ?? []) {
           const related = lineage(concept, local, resolve).some((node) => node.concept === other.concept) || lineage(other.concept, local, resolve).some((node) => node.concept === concept);
