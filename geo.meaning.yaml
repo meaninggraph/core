@@ -139,7 +139,7 @@ concepts:
       en: Population
       ru: Население
     synonyms:
-      en: [number of people, inhabitants, residents, people]
+      en: [number of people, inhabitants, residents]
       ru: [численность населения, жители, количество людей]
     description: >-
       The number of people living in a country at a point in time. Always
