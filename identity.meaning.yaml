@@ -10,7 +10,7 @@ concepts:
       en: Person
       ru: Человек
     synonyms:
-      en: [individual, people, human]
+      en: [individual, human, humans, persons]
       ru: [лицо, люди]
     description: An individual human being.
 

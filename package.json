@@ -1,0 +1,17 @@
+{
+  "name": "meaninggraph-core-checks",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Checks for the meaning files in this repository. The repository itself is data (CC0-1.0); nothing here is published to npm.",
+  "license": "CC0-1.0",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node --test scripts/test.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.8.1"
+  }
+}

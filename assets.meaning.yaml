@@ -17,13 +17,15 @@ concepts:
     description: >-
       A unit of money used to express value, with an ISO 4217 code. Values are
       keyed by the lowercase alphabetic code. Starter subset: three
-      currencies.
+      currencies. No alias is a bare word or symbol that several currencies
+      share ("dollar", "$"): the US dollar is "US dollar", "US dollars" or
+      "US$", so another dollar can be added without a collision.
     values:
       - id: usd
         labels: {en: US dollar, ru: Доллар США}
         aliases:
-          en: [USD, dollar, dollars, $]
-          ru: [доллар, доллары]
+          en: [USD, US$, US dollars, United States dollar]
+          ru: [доллары США]
         codes: {alpha: USD, numeric: "840"}
       - id: eur
         labels: {en: Euro, ru: Евро}
@@ -33,8 +35,8 @@ concepts:
       - id: gbp
         labels: {en: Pound sterling, ru: Фунт стерлингов}
         aliases:
-          en: [GBP, pound, pounds, £]
-          ru: [фунт, фунты]
+          en: [GBP, pounds sterling, sterling, £]
+          ru: [фунты стерлингов]
         codes: {alpha: GBP, numeric: "826"}
 
   - id: money-amount

@@ -1,0 +1,31 @@
+name: Check meaning files
+
+# Validates every *.meaning.yaml in the repository root against
+# meaning.schema.json, then runs the cross-concept checks (references resolve,
+# extends joins compatible kinds, values-of and units-of name entities, ratios
+# are never summed, ids and values are unique) and the rules of this
+# repository (CC0-1.0 on every file, no bindings, no meaning file outside the
+# root, one word names one concept). scripts/check.mjs is the single entry point.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate the meaning files
+        run: npm run check
+      - name: Test the checks
+        run: npm test
