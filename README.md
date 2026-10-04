@@ -11,7 +11,7 @@ columns to them.
 |---|---|
 | `geo.meaning.yaml` | country (a starter subset with ISO 3166-1 codes, English and Russian names, aliases such as "USA"), country-code, city, population |
 | `assets.meaning.yaml` | currency (USD, EUR, GBP), money-amount |
-| `commerce.meaning.yaml` | customer, invoice, invoice-line, invoice-total, price, unit-price, quantity, revenue |
+| `commerce.meaning.yaml` | customer, order, order-line, commercial-line-item, invoice, invoice-line, invoice-total, price, unit-price, quantity, revenue |
 | `identity.meaning.yaml` | person, organization, employee, manager |
 | `calendar.meaning.yaml` | date |
 | `statistics.meaning.yaml` | per-capita (a pattern for ratios) |

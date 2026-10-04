@@ -2,7 +2,7 @@ format: meaning/draft-1
 id: commerce
 name: Commerce
 description: >-
-  Buying and selling: customers, invoices, prices and revenue.
+  Buying and selling: customers, orders, invoices, line items, prices and revenue.
 license: CC0-1.0
 concepts:
   - id: customer
@@ -32,13 +32,52 @@ concepts:
   - id: invoice-line
     kind: entity
     of: invoice
+    extends: commercial-line-item
     labels:
       en: Invoice line
       ru: Строка счёта
     synonyms:
-      en: [line item, invoice item]
+      en: [invoice item]
       ru: [позиция счёта]
     description: One item on an invoice, with its unit price and quantity.
+
+  - id: order
+    kind: entity
+    labels:
+      en: Order
+      ru: Заказ
+    synonyms:
+      en: [sales order, purchase order]
+      ru: [заказ на покупку]
+    description: >-
+      A request or commitment to supply goods or services. An order describes
+      intended supply; an invoice requests payment for supplied goods or
+      services, and a receipt records payment.
+
+  - id: commercial-line-item
+    kind: entity
+    labels:
+      en: Commercial line item
+      ru: Позиция коммерческого документа
+    synonyms:
+      en: [line item, line items]
+      ru: [позиция]
+    description: >-
+      One product or service entry on a commercial order or invoice, commonly
+      with a quantity and a unit price. It does not by itself specify whether
+      the document requests supply or payment.
+
+  - id: order-line
+    kind: entity
+    of: order
+    extends: commercial-line-item
+    labels:
+      en: Order line
+      ru: Строка заказа
+    synonyms:
+      en: [order item, order detail]
+      ru: [позиция заказа]
+    description: One product or service requested on an order.
 
   - id: invoice-total
     kind: attribute

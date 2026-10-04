@@ -37,6 +37,20 @@ test('every meaning file in the repository passes the schema and the cross-conce
   assert.equal(problemsOf(), '', 'a copy of the files through the YAML round trip passes too');
 });
 
+test('orders and invoices remain distinct while their line items share a common parent', () => {
+  const files = Object.fromEntries(rootFiles.map((name) => [name, parseYaml(readFileSync(join(root, name), 'utf8'))]));
+  const invoice = concept(files, 'invoice-line');
+  const order = concept(files, 'order-line');
+  assert.equal(concept(files, 'order').extends, undefined);
+  assert.equal(concept(files, 'invoice').extends, undefined);
+  assert.equal(order.of, 'order');
+  assert.equal(order.extends, 'commercial-line-item');
+  assert.equal(invoice.of, 'invoice');
+  assert.equal(invoice.extends, 'commercial-line-item');
+  assert.equal(concept(files, 'unit-price').of, 'invoice-line');
+  assert.equal(concept(files, 'quantity').of, 'invoice-line');
+});
+
 test('a file the schema rejects fails', () => {
   assert.match(problemsOf((files) => { delete concept(files, 'country').description; }), /geo.meaning.yaml: schema: \/concepts\/0 must have required property 'description'/);
   assert.match(problemsOf((files) => { concept(files, 'country').kind = 'thing'; }), /schema: \/concepts\/0\/kind must be equal to one of the allowed values/);
