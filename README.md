@@ -10,7 +10,7 @@ columns to them.
 | File | Concepts |
 |---|---|
 | `geo.meaning.yaml` | country (a starter subset with ISO 3166-1 codes, English and Russian names, aliases such as "USA"), country-code, city, population |
-| `assets.meaning.yaml` | currency (USD, EUR, GBP), money-amount |
+| `assets.meaning.yaml` | currency (USD, EUR, GBP), money-amount, fx-reference-quote, fx-reference-date, fx-base-currency, fx-quote-currency, indicative-fx-reference-rate |
 | `commerce.meaning.yaml` | customer, order, order-line, commercial-line-item, invoice, invoice-line, invoice-total, price, unit-price, quantity, revenue |
 | `identity.meaning.yaml` | person, organization, employee, manager |
 | `calendar.meaning.yaml` | date |
