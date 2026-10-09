@@ -127,6 +127,16 @@ test('F-04: a file with no format is refused by the schema rule', () => {
   refuse(report, 'schema');
   assert.match(message(report.problems), /schema: format must be meaning\/draft-1 or meaning\/draft-2/);
 });
+test('robustness: concepts that is a string or a set, in a draft-1 or a draft-2 file, is refused by the schema; the check does not throw', () => {
+  for (const [name, text] of Object.entries({ string: 'concepts: nope\n', set: 'concepts: !!set {a, b}\n' })) {
+    for (const format of [d1, d2]) {
+      const dir = mkdtempSync(join(scratch, 'g-'));
+      writeFileSync(join(dir, 'shop.meaning.yaml'), `format: ${format}\nid: shop\nname: Shop\ndescription: A fixture.\nlicense: CC0-1.0\n${text}`);
+      const report = checkMeaningReport({ local: loadMeaningDir(dir, self), resolve: () => ({ error: 'none' }), schemaPath, selfRepo: self });
+      assert.ok(report.problems.some((found) => found.rule === 'schema'), `${name} in ${format}: a schema problem was expected, got ${message(report.problems)}`);
+    }
+  }
+});
 test('F-05: two files of one graph in two formats are refused as format-mixed, naming each format and a file', () => {
   const report = run({ 'a.meaning.yaml': file(d1, [concept('one', 'entity')], { models: false }), 'b.meaning.yaml': file(d2, [concept('two', 'entity')], { models: false }) });
   refuse(report, 'format-mixed');
@@ -160,8 +170,16 @@ test('F-17: a draft-1 attribute that carries values and no values-of is accepted
 // ---- R: roles (D6 part b) -----------------------------------------------------------------------------------------
 
 test('R-01: a draft-1 file may use instances and reference; only earlier-format is noticed', () => {
-  const report = run(file(d1, base(d1, [], { customer: [bind(d1, 'Order', 'CustomerId', 'reference')] })));
-  acceptWith(report, 'earlier-format');
+  // the two role names are written literally, in a draft-1 file: `bind` would write entity and foreign-key there
+  const concepts = [
+    concept('customer', 'entity', { bindings: [{ model: 'modelspec:///shop.Customer', role: 'instances' }, { model: 'modelspec:///shop.Order', property: 'CustomerId', role: 'reference' }] }),
+    concept('order', 'entity', { bindings: [{ model: 'modelspec:///shop.Order', role: 'instances' }] }),
+  ];
+  const text = stringifyYaml(file(d1, concepts), { lineWidth: 0 });
+  assert.match(text, /role: instances/);
+  assert.match(text, /role: reference/);
+  assert.doesNotMatch(text, /role: (entity|foreign-key)/);
+  acceptWith(run(file(d1, concepts)), 'earlier-format');
 });
 test('R-02: a draft-2 file with entity and foreign-key is accepted with the notice earlier-role-name', () => {
   const report = run(file(d2, base(d2, [], { customer: [{ model: 'modelspec:///shop.Order', field: 'CustomerId', role: 'foreign-key' }] })));
