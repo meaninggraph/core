@@ -213,9 +213,9 @@ Northwind, Pubs, Employees, Sakila and AdventureWorks", and recommended "**A: th
 graph, then each of the six (my recommendation).**" It said that the full packet of
 questions was a file on disk (not published).
 
-At 09:39:43 UTC the lead sent its next message, which was about another question. It
-ends with a list headed "Everything now waiting on you", whose second point reads, in
-full:
+At 09:39:43 UTC the lead sent its next message, which was about another question. Its
+last section is headed "Everything now waiting on you" and holds a list, whose second
+point reads, in full:
 
 > 2. `meaning/draft-2`: may the format be published with the listed names, and when are your seven graphs converted? (Previous message.)
 
