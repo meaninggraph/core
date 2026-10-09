@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Meaning file, draft 2",
-  "description": "A meaning file says what the data in a dataset means: concepts with labels per language, synonyms, a description, and bindings to ModelSpec entities and properties. Format meaning/draft-2: it may change before meaning/1. A concept is an entity, a property, a measure, a dimension or a value-set (a list of known values); bindings name a ModelSpec record type and field. Concept references are either a bare concept id (same repository) or meaning://{host}/{org}/{repo}/{concept-id}, optionally pinned with ?ref=<git-ref>. Rules that need more than one concept (extends joins compatible kinds only, of, values-of and units-of name entities or value sets, measure inputs and dimensions, ratios are never summed, binding roles match the model) are checked by tooling, not by this schema. The earlier format, meaning/draft-1, has its own schema, meaning.schema.json.",
+  "description": "A meaning file says what the data in a dataset means: concepts with labels per language, synonyms, a description, and bindings to ModelSpec record types and fields. Format meaning/draft-2: it may change before meaning/1. A concept is an entity, a property, a measure, a dimension or a value-set (a list of known values); bindings name a ModelSpec record type and field. Concept references are either a bare concept id (same repository) or meaning://{host}/{org}/{repo}/{concept-id}, optionally pinned with ?ref=<git-ref>. Rules that need more than one concept (extends joins compatible kinds only, of, values-of and units-of name entities or value sets, measure inputs and dimensions, ratios are never summed, binding roles match the model) are checked by tooling, not by this schema. The earlier format, meaning/draft-1, has its own schema, meaning.schema.json.",
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "id", "name", "description", "concepts"],
@@ -97,7 +97,7 @@
         "match": {
           "type": "string",
           "pattern": "^(labels|codes\\.[a-z][a-z0-9-]*)$",
-          "description": "How stored values name the concept's known values (its own values, or those of the entity named by values-of). labels (the default): a stored value equals a value's label or alias in any language, ignoring case. codes.<code>: a stored value equals the value's code of that name (codes.alpha2, codes.numeric). Only for roles value and display-name."
+          "description": "How stored values name the concept's known values (the values of the entity or value set named by values-of). labels (the default): a stored value equals a value's label or alias in any language, ignoring case. codes.<code>: a stored value equals the value's code of that name (codes.alpha2, codes.numeric). Only for roles value and display-name."
         },
         "note": { "type": "string", "minLength": 1 }
       },
@@ -172,7 +172,7 @@
         "labels": { "$ref": "#/$defs/labels" },
         "synonyms": { "$ref": "#/$defs/words" },
         "description": { "type": "string", "minLength": 1, "description": "Plain English: what it is, and when to use it rather than a similar concept. Required: it is the record's Description or Meaning." },
-        "unit": { "type": "string", "minLength": 1, "description": "Unit of the values. In words, or, when units-of applies, a label, alias or code of one value of that entity (USD)." },
+        "unit": { "type": "string", "minLength": 1, "description": "Unit of the values. In words, or, when units-of applies, a label, alias or code of one value of that concept (USD)." },
         "values": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/value" }, "description": "The known values of a value-set, and only of a value-set. The list is open (the values known so far) unless complete is true." },
         "complete": { "type": "boolean", "description": "Only on a value-set: true when the list is all the values there are (the days of the week). A stored value that matches nothing is then an error; without it, it is reported as unknown." },
         "measure": { "$ref": "#/$defs/measure" },
