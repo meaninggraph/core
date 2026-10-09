@@ -131,7 +131,8 @@ below touch this decision and are not decided by him. Approving this record appr
 none of them. Each note says whose recommendation or choice the point is, as the
 implementation contract for this format and the packet of questions prepared for him
 record it (both written on 9 October 2026, not published). The numbers are the
-contract's, in its section "Not decided by the owner".
+contract's, in its section "Not decided by the owner". The notes give the state on 9
+October 2026, when this record was written.
 
 Who is who: the proposal's author is the session; the contract's author and the code
 reviewer are two other assistant sessions that worked for the owner on 9 October

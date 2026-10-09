@@ -89,9 +89,9 @@ At 20:54:59 UTC the session answered. Its message, in full:
 **Recorder's account of that message.** It puts to him what the card later calls the
 three rules of part b. Two of them are in it in nearly the card's words: "A value id
 never changes meaning and is never deleted" and "A stored value that matches nothing
-is reported as unknown". For the third it says, as a gap of today's format, "A value
-cannot be retired." In the bullet that begins "Every list is treated as closed." it
-also proposes a marker by which a list can say that it is complete.
+is reported as unknown". For the third it says, as a gap of the format as it then was,
+"A value cannot be retired." In the bullet that begins "Every list is treated as
+closed." it also proposes a marker by which a list can say that it is complete.
 
 At 20:57:41 UTC the owner replied:
 
@@ -147,7 +147,7 @@ At 21:00:01 UTC the session replied. Its message, in full:
 
 Recorder's note: "issue #21" in that message is
 [issue 21 of `specscore/modelspec`](https://github.com/specscore/modelspec/issues/21).
-This repository has no issue of that number.
+When this record was written, this repository had no issue of that number.
 
 **On record, the questions in chat for parts b and c.** At 22:55:07 UTC the session
 wrote to the owner (the same stored record). The message asked:
@@ -200,18 +200,19 @@ said:
 
 > Your answer to part a, 8 October 2026: "OK on value set." Parts b and c are not answered. I recommend both.
 
-**On record, what the session changed on the card after his answer.** At 23:02 UTC
-the session rewrote the card to record his answers and overwrote the file. The script
-that made the changes is kept (not published), and the file on disk today is that
-later copy. On this card the heading became "Direction, three parts. Added in
-revision 2"; "so I do not count them as answered." became "so I asked them
-separately."; "Part c is wider than what you said OK to." became "Part c is wider than
-what you first said OK to, so it was asked separately too."; "The identifier was not
-part of what you said OK to; confirm it or change the string in the note." became "The
-identifier was not part of what you first said OK to; your yes to D14 as written fixed
-it."; the line about his answers was rewritten to give his answers to parts b and c;
-and the answers "Approve the three rules" and, for part c, "Approve" were marked as
-chosen. The later wording is the session's. It was not put to him.
+**On record, what the session changed on the card after his answer.** At 23:02 UTC the
+session rewrote the card to record his answers and overwrote the file. The script that
+made the changes is kept (not published), and the file that was on disk when this
+record was written is that later copy. On this card the heading became "Direction,
+three parts. Added in revision 2"; "so I do not count them as answered." became "so I
+asked them separately."; "Part c is wider than what you said OK to." became "Part c is
+wider than what you first said OK to, so it was asked separately too."; "The
+identifier was not part of what you said OK to; confirm it or change the string in the
+note." became "The identifier was not part of what you first said OK to; your yes to
+D14 as written fixed it."; the line about his answers was rewritten to give his
+answers to parts b and c; and the answers "Approve the three rules" and, for part c,
+"Approve" were marked as chosen. The later wording is the session's. It was not put to
+him.
 
 **Recorder's account of the card.** The card was written after his answer to part a.
 Whether he opened the file between the session's message of 22:55:07 UTC and his
@@ -253,7 +254,8 @@ answers the date 9 October 2026, which is his local date.
 
 **Recorder's account.** So the decision of parts b and c is the two chat questions he
 answered yes to: a value set is open, meaning it lists the values known so far; and a
-value set may stand wherever an entity stands today.
+value set may stand wherever an entity stands today. "Today" is the question's word,
+for the format as it was on 8 October 2026, `meaning/draft-1`.
 
 What is on record about the three rules of part b. The session put them to him in
 chat at 20:54:59 UTC, in the message quoted in full in the Context and in the form
@@ -320,7 +322,8 @@ points below touch this decision and are not decided by him. Approving this reco
 approves none of them. Each note says whose recommendation or choice the point is, as
 the implementation contract for this format and the packet of questions prepared for
 him record it (both written on 9 October 2026, not published). The numbers are the
-contract's, in its section "Not decided by the owner".
+contract's, in its section "Not decided by the owner". The notes give the state on 9
+October 2026, when this record was written.
 
 Who is who: the proposal's author is the session; the contract's author and the code
 reviewer are two other assistant sessions that worked for the owner on 9 October
@@ -337,17 +340,18 @@ About part a, the kind and where `values` may stand:
 - **N11. Which other keys a value set may carry.** The contract author's
   recommendation.
 - **N9. Whether a value set may carry bindings.** The contract author's
-  recommendation is that it may not, for now. The proposal leaves open how the rows
-  of a lookup table are tied to the values of a value set. The recommendation departs
-  from the session's message of 21:00:01 UTC, to which he said OK: that message says
-  that "A `Gender` or `Country` table binds to the same value set." and that an enum
-  "is bound to a value set the way a record type is bound to an entity".
-- **N13. Whether a checker compares a model's enum with a value set.** The card
-  says that an enum's values "can then be checked against a value set"; it does not
-  say that a checker does so. The contract's author leaves the check out for now; it
-  is on the plan. That departs from the session's message of 21:00:01 UTC, to which
-  he said OK: that message says that "each enum value must name exactly one value of
-  the set".
+  recommendation is that it may not, in `meaning/draft-2`. The proposal leaves open
+  how the rows of a lookup table are tied to the values of a value set. The
+  recommendation departs from the session's message of 21:00:01 UTC, to which he said
+  OK: that message says that "A `Gender` or `Country` table binds to the same value
+  set." and that an enum "is bound to a value set the way a record type is bound to an
+  entity".
+- **N13. Whether a checker compares a model's enum with a value set.** The card says
+  that an enum's values "can then be checked against a value set"; it does not say
+  that a checker does so. The contract's author leaves the check out of the work on
+  `meaning/draft-2`; it is on the plan. That departs from the session's message of
+  21:00:01 UTC, to which he said OK: that message says that "each enum value must name
+  exactly one value of the set".
 - **N12. How a project adds values of its own to a shared value set.** Left open by
   the proposal. Nobody's choice yet; it is on the plan.
 - **N40. Whether the test files of the Go checker that carry `values` are changed.**

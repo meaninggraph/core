@@ -75,17 +75,18 @@ which is quoted under "What the approval authorises", the card said "Not answere
 yet. I recommend both renames." The card had a field for a note, and its sentence
 about what approval would authorise points to that field.
 
-**On record, what the session changed on the card after his answer.** At 23:02 UTC
-the session rewrote the card to record his answer and overwrote the file. The script
-that made the changes is kept (not published), and the file on disk today is that
-later copy. On this card the heading became "Vocabulary, two parts. Added in revision
-2"; "Approval would authorise:" became "Your approval authorises:"; "Approving as
-written also fixes one detail, the identifier meaning/draft-2; change it in the note."
-became "Approving as written also fixed one detail, the identifier meaning/draft-2.";
-the line "Not answered yet. I recommend both renames." became a line that gives his
-answer; a sentence of the card's reasons that said he had not answered was changed to
-say that he had; and the answers "Rename to property" and "Rename to field:" were
-marked as chosen. The later wording is the session's. It was not put to him.
+**On record, what the session changed on the card after his answer.** At 23:02 UTC the
+session rewrote the card to record his answer and overwrote the file. The script that
+made the changes is kept (not published), and the file that was on disk when this
+record was written is that later copy. On this card the heading became "Vocabulary,
+two parts. Added in revision 2"; "Approval would authorise:" became "Your approval
+authorises:"; "Approving as written also fixes one detail, the identifier
+meaning/draft-2; change it in the note." became "Approving as written also fixed one
+detail, the identifier meaning/draft-2."; the line "Not answered yet. I recommend both
+renames." became a line that gives his answer; a sentence of the card's reasons that
+said he had not answered was changed to say that he had; and the answers "Rename to
+property" and "Rename to field:" were marked as chosen. The later wording is the
+session's. It was not put to him.
 
 **Recorder's account.** Whether he opened the file between the session's message and
 his reply, five minutes and 44 seconds later, is not known. What was put to him in
@@ -129,16 +130,20 @@ published):
   said OK to; confirm it or change the string in the note."
 
 **Recorder's account.** The string `meaning/draft-2` was the session's suggestion,
-made to him before his yes. Both cards, as they stood when he answered, asked for his
-word on it: he could confirm it, or change it in a note. He answered "D14a yes, D14b
-yes, D15b yes, D15c yes" in chat. That message has no note and no word about the
-identifier. Whether a yes with no note means "as written" is a reading and not a word
-of his. The session made that reading at 23:03:04 UTC, and it stayed a reading until
-his answers of 9 October 2026, which the next section quotes. The session's words
-"because the card said approving it as written does so" match the card as it stood;
-the card's next words, "change it in the note", are not in the session's sentence.
-After his answer the session rewrote both cards to say that his yes had fixed the
-identifier, as set out above and in decision 0003. That wording is the session's too.
+made to him before his yes. Each card, as it stood when he answered, spoke of the
+identifier in its own way. The D14 card said that approving as written fixes it, and
+that he could change it in the note. The D15 card said that it was not part of what
+he had said OK to, and asked him to confirm it or to change the string in the note.
+He answered "D14a yes, D14b yes, D15b yes, D15c yes" in chat. That message has no
+note and no word about the identifier. Whether a yes with no note means "as written"
+is a reading and not a word of his. The session made that reading at 23:03:04 UTC.
+Nothing of his that the recorder read confirms it, on that day or later. What he did
+on 9 October 2026 is another thing: he answered a question that put the identifier
+itself to him, by name, as the next section quotes. The session's words "because the
+card said approving it as written does so" match the D14 card as it stood; the card's
+next words, "change it in the note", are not in the session's sentence. After his
+answer the session rewrote both cards to say that his yes had fixed the identifier,
+as set out above and in decision 0003. That wording is the session's too.
 
 The recorder read his messages of 8 October 2026 after 23:03:04 UTC and his messages
 of 9 October 2026 from 06:47 UTC to 15:43 UTC in the stored records (not published);
@@ -194,7 +199,7 @@ OpenVaultDB, another project's format, and is not a matter of this repository. T
 other two parts are set out below: what had been listed to him, then the names, then
 the graphs.
 
-**On record, what had been listed to him before "5 - ok".** Four messages, in order.
+**On record, what had been listed to him before "5 - ok".** Five messages, in order.
 
 At 09:37:05 UTC the lead put the question "may the format `meaning/draft-2` be
 published with these names?" to him with a table. Its rows named `meaning/draft-2`;
@@ -207,6 +212,15 @@ your seven graphs converted?", named the seven, "the core graph and Chinook,
 Northwind, Pubs, Employees, Sakila and AdventureWorks", and recommended "**A: the core
 graph, then each of the six (my recommendation).**" It said that the full packet of
 questions was a file on disk (not published).
+
+At 09:39:43 UTC the lead sent its next message, which was about another question. It
+ends with a list headed "Everything now waiting on you", whose second point reads, in
+full:
+
+> 2. `meaning/draft-2`: may the format be published with the listed names, and when are your seven graphs converted? (Previous message.)
+
+That is the first use of the words "the listed names". It points at the message
+before it, so at that moment the words meant the table of 09:37:05 UTC.
 
 At 11:58:12 UTC a message of his had the line "3. What 2 questions?".
 
@@ -248,9 +262,12 @@ At 12:46:14 UTC the lead listed what waited on him. The third point of that list
 began:
 
 > 3. **The three format questions** I restated after your "What 2 questions?" and "4 what?" are still open:
+>    - whether `meaning/draft-2` may be published with the listed names;
 
-He sent no message between the short form of 12:01:14 UTC and the list of 13:39:56
-UTC whose fifth point he answered "5 - ok".
+That is the second use of the words "the listed names", this time in a point about
+the questions as restated in the short form. He sent no message between the short
+form of 12:01:14 UTC and the list of 13:39:56 UTC whose fifth point he answered "5 -
+ok"; that point is the third use of the words.
 
 *The names.* The table below lists the names as the packet's table lists them, with
 where the packet says each comes from, and whether the short form of 12:01:14 UTC
@@ -259,8 +276,8 @@ named it. The table is the recorder's listing, not the owner's words:
 | Name | What it is | Where it comes from | In the short form |
 |---|---|---|---|
 | `meaning/draft-2` | The format's identifier, on the `format:` line of every file | The session's suggestion (above) | Yes |
-| `property` | The kind that is `attribute` today | The owner's "D14a yes" | Yes |
-| `field:` | The binding key that is `property:` today | The owner's "D14b yes" | Yes |
+| `property` | The kind that is `attribute` in `meaning/draft-1` | The owner's "D14a yes" | Yes |
+| `field:` | The binding key that is `property:` in `meaning/draft-1` | The owner's "D14b yes" | Yes |
 | `value-set` | A kind for a list of values | The session's name; the owner's "OK on value set." (decision 0003) | Yes |
 | `instances`, `reference` | The new names of the roles `entity` and `foreign-key`, with the old names accepted | Card D6; the owner's "D6b: Rename both" ([decision 0001](0001-derived-links-and-two-role-names.md)) | Yes |
 | `complete: true` | Says that a list of values is complete | The word is card D15's; the key and its spelling are the contract author's (N1) | Yes |
@@ -269,7 +286,7 @@ named it. The table is the recorder's listing, not the owner's words:
 | `format-mixed`, `format-word`, `earlier-format`, `earlier-role-name`, `unknown-value`, `retired-value` | Names of six new findings of the checkers | The contract author's (N26) | No |
 | `meaning.draft-2.schema.json` | The name of a second schema file | The contract author's (N25) | No |
 | How findings are reported | A file refused for a word of the wrong format is reported as `format-word` beside the existing `schema` finding; the four new notices are warnings | The code reviewer's recommendation (N50); the lead's choice (N51) | No |
-| `meaning_property`, `meaning_value_set` | Search kinds; and the page of a value set goes under `concepts/`, with today's address under `entities/` kept as a redirect | `meaning_property` is card D14's word; the rest is the contract author's (N31) | No |
+| `meaning_property`, `meaning_value_set` | Search kinds; and the page of a value set goes under `concepts/`, with the address it had under `entities/` when this record was written kept as a redirect | `meaning_property` is card D14's word; the rest is the contract author's (N31) | No |
 | `meaninggraph rewrite` | A command that rewrites a hand-written meaning file; a second new command prints links, and its name is left to its pull request | The contract author's (N24, N18) | No |
 
 Four limits of his confirmation, on the recorder's account.
@@ -285,13 +302,17 @@ Four limits of his confirmation, on the recorder's account.
   the second command were spelled out only in the packet file. The table of 09:37:05
   UTC said "six rule ids" and did not mention the other three.
 - Whether he opened the packet file is not known.
-- Neither the point he answered "5 - ok", which says "the listed names", nor the
-  reading he called correct, which says "the names as listed", says which listing is
-  meant. So his two answers are on record as following the listing of the eight. For
-  the rows marked "No", what is on record is one row of the table of 09:37:05 UTC and
-  the packet. Each of those names stays the choice of whoever the table and the notes
-  below name, and his "2 - correct" is not a separate decision of his on any one of
-  them.
+- The words "the listed names" do not settle which listing is meant. At their first
+  use, at 09:39:43 UTC, they pointed at the table of 09:37:05 UTC, the wider listing.
+  At their second use, at 12:46:14 UTC, they stood in a point about the questions as
+  restated in the short form. The point he answered "5 - ok" uses them a third time
+  and points at no message, and the reading he called correct says "the names as
+  listed" and points at none either. So the message of 09:39:43 UTC cuts towards the
+  wider listing, the last listing put to him is the shorter one, and the record
+  cannot say which he had in mind. For the rows marked "No", what is on record is one
+  row of the table of 09:37:05 UTC and the packet. Each of those names stays the
+  choice of whoever the table and the notes below name, and his "2 - correct" is not
+  a separate decision of his on any one of them.
 
 *The graphs.* Both listings recommended the same order. At 09:37:05 UTC: "**A: the
 core graph, then each of the six (my recommendation).**" In the short form: "**A: all
@@ -362,7 +383,8 @@ and are not decided by him. Approving this record approves none of them. Each no
 says whose recommendation or choice the point is, as the implementation contract for
 this format and the packet of questions prepared for him record it (both written on 9
 October 2026, not published). The numbers are the contract's, in its section "Not
-decided by the owner".
+decided by the owner". The notes give the state on 9 October 2026, when this record
+was written.
 
 Who is who: the proposal's author is the session; the contract's author and the code
 reviewer are two other assistant sessions that worked for the owner on 9 October
@@ -370,11 +392,13 @@ reviewer are two other assistant sessions that worked for the owner on 9 October
 
 About the identifier and the words:
 
-- **N43. The identifier `meaning/draft-2`.** The session's suggestion. Both cards as
-  they stood asked him to confirm it or to change it in a note; he answered yes in
-  chat, with no note. That a yes with no note fixed it is the session's reading
-  (above). On 9 October 2026 the identifier was in the question he answered "5 - ok",
-  in the reading he called correct and in every listing put to him.
+- **N43. The identifier `meaning/draft-2`.** The session's suggestion. The D14 card
+  as it stood said that approving as written fixes it and that he could change it in
+  the note; the D15 card asked him to confirm it or to change the string in the note.
+  He answered yes in chat, with no note. That a yes with no note fixed it is the
+  session's reading (above), and nothing of his that the recorder read confirms that
+  reading. On 9 October 2026 the identifier itself was in the question he answered
+  "5 - ok", in the reading he called correct and in every listing put to him.
 - **N34. Which changes need the new identifier.** The card says that both renames
   need it. That the two role names of decision 0001 do not is the proposal author's
   text.
