@@ -1,0 +1,43 @@
+name: SpecScore lint
+
+# Checks the decision records under spec/ and their index with the SpecScore
+# CLI. The meaning files are checked by check.yml, not here.
+#
+# The CLI is pinned to one release and its archive is verified by SHA-256, so
+# the rule set does not change underneath the repository. Move the version and
+# the checksum together, in a commit of their own.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: specscore-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install pinned SpecScore CLI
+        env:
+          SPECSCORE_VERSION: 0.55.0
+          SPECSCORE_SHA256: 17b0ec1d1f6c5f4a047f9c007355caa27e8507ad7f52e78546967579169cb764
+        run: |
+          set -euo pipefail
+          archive="specscore_${SPECSCORE_VERSION}_linux_amd64.tar.gz"
+          url="https://github.com/specscore/specscore-cli/releases/download/v${SPECSCORE_VERSION}/${archive}"
+          curl --fail --silent --show-error --location "${url}" --output "/tmp/${archive}"
+          echo "${SPECSCORE_SHA256}  /tmp/${archive}" | sha256sum --check --strict
+          tar --extract --gzip --file "/tmp/${archive}" --directory /tmp specscore
+          /tmp/specscore version
+      - name: Lint SpecScore tree
+        run: /tmp/specscore spec lint
