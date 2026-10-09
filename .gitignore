@@ -1,3 +1,6 @@
 node_modules/
 .DS_Store
 .cache/
+specscore.local.yaml
+**/.*.lifecycle-transaction.lock
+.specscore-lifecycle.lock
