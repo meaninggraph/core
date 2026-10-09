@@ -506,7 +506,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
     }
     if (isKnownFormat(format)) for (const { where, message } of formatWordFindings(doc, format)) add('format-word', `${path}: ${where}: format-word: ${message}`);
     if (format === draft2) {
-      const earlier = [...new Set((doc.concepts ?? []).flatMap((c) => (Array.isArray(c?.bindings) ? c.bindings : [])).map((b) => b?.role).filter((role) => role === 'entity' || role === 'foreign-key'))];
+      const earlier = [...new Set((Array.isArray(doc.concepts) ? doc.concepts : []).flatMap((c) => (Array.isArray(c?.bindings) ? c.bindings : [])).map((b) => b?.role).filter((role) => role === 'entity' || role === 'foreign-key'))];
       if (earlier.length > 0) note('earlier-role-name', `${path}: earlier-role-name: the role names entity and foreign-key are the earlier spellings of instances and reference (this file uses ${earlier.join(' and ')})`);
     }
     if (!Array.isArray(doc?.concepts)) continue;
