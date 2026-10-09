@@ -207,3 +207,73 @@ test('a model in the earlier or the current spelling that declares a removed con
     assert.match(shopProblems({ hcl: `${hcl}\nindex "i" {\n}\n` }).join('\n'), /shop.meaning.yaml: models: line \d+: the index block is reserved by ModelSpec/);
   }
 });
+
+// ---- model members named like properties of Object.prototype ---------------------------------------------------
+// Names are kept in objects without a prototype and asked with Object.hasOwn, so constructor, toString, __proto__ and
+// the rest are ordinary names: a model may declare them, and a binding to one finds it only when the model does.
+
+const prototypeHcl = (spelling) => {
+  const [record, member, reference] = spelling === 'current' ? ['record', 'field', 'record'] : ['entity', 'property', 'entity'];
+  return `${record} "constructor" {
+  key = ["toString"]
+  ${member} "toString" {
+    type = "int"
+    required = true
+  }
+  ${member} "__proto__" {
+    type = "string"
+  }
+}
+
+${record} "valueOf" {
+  key = ["id"]
+  ${member} "id" {
+    type = "int"
+    required = true
+  }
+  ${member} "hasOwnProperty" {
+    ${reference} = "constructor"
+  }
+}
+
+enum "isPrototypeOf" {
+  values = ["a"]
+  hasOwnProperty = true
+}
+`;
+};
+const prototypeMeaning = (bindings) => ({
+  format: 'meaning/draft-1',
+  id: 'shop',
+  name: 'Shop',
+  description: 'A fixture.',
+  license: 'CC0-1.0',
+  models: { shop: 'shop.modelspec.hcl' },
+  concepts: [{ id: 'thing', kind: 'entity', labels: { en: 'Thing' }, description: 'A thing.', bindings }],
+});
+
+test('a model may declare members named like Object.prototype properties, and a binding finds them only when it declares them', () => {
+  for (const spelling of ['earlier', 'current']) {
+    const hcl = prototypeHcl(spelling);
+    const declared = [binding('constructor', null, 'entity'), binding('constructor', 'toString', 'identifier'), binding('constructor', '__proto__', 'display-name')];
+    assert.deepEqual(shopProblems({ hcl, meaning: prototypeMeaning(declared) }), [], spelling);
+    const json = toModelspecJson(parseHcl(hcl), { id: 'shop', name: 'shop', version: '1' });
+    assert.deepEqual(Object.keys(json[spelling === 'current' ? 'records' : 'entities']), ['constructor', 'valueOf']);
+    assert.deepEqual(Object.keys(json.enums.isPrototypeOf), ['values', 'hasOwnProperty']);
+    // The reference to the record type constructor is read like any other.
+    assert.deepEqual(shopProblems({ hcl, meaning: prototypeMeaning([binding('valueOf', 'hasOwnProperty', 'value')]) }).join('\n').match(/is a reference to constructor; bind it with role foreign-key/)?.length, 1, spelling);
+    // Not declared: a binding to the name of an Object.prototype property is refused, as it is for any other missing name.
+    const notDeclared = (extra) => shopProblems({ hcl, meaning: prototypeMeaning(extra) }).join('\n');
+    assert.match(notDeclared([binding('toString', null, 'entity')]), /modelspec:\/\/\/shop.toString: module shop has no entity toString/, spelling);
+    assert.match(notDeclared([binding('constructor', 'valueOf', 'value')]), /entity constructor has no property valueOf/, spelling);
+    assert.match(notDeclared([binding('valueOf', 'toString', 'value')]), /entity valueOf has no property toString/, spelling);
+  }
+});
+
+test('a name declared twice is still a duplicate, whatever it is called', () => {
+  for (const name of ['constructor', '__proto__', 'plain']) {
+    assert.throws(() => toModelspecJson(parseHcl(`record "${name}" {\n}\nentity "${name}" {\n}\n`), { id: 'm', name: 'm', version: '1' }), new RegExp(`duplicate entity "${name}"`));
+    assert.throws(() => parseHcl(`record "A" {\n  ${name} = 1\n  ${name} = 2\n}\n`), new RegExp(`duplicate attribute ${name}`));
+    assert.throws(() => toModelspecJson(parseHcl(`record "A" {\n  field "${name}" {\n  }\n  property "${name}" {\n  }\n}\n`), { id: 'm', name: 'm', version: '1' }), new RegExp(`duplicate property "${name}" in record "A"`));
+  }
+});
