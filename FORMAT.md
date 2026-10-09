@@ -15,8 +15,8 @@ There are two formats, and a reader that knows both reads both:
   `value-set`.
 - `meaning/draft-1` is the earlier one, with its own schema,
   [`meaning.schema.json`](meaning.schema.json). [How draft 1 differs](#how-draft-1-differs)
-  says exactly where. A reader reads it in full and reports one notice per
-  file.
+  says exactly where. A reader reads it in full and reports one notice for each
+  draft-1 file of the graph it checks, and none for a graph that is only pinned.
 
 A meaning file says what the data in a dataset means: concepts with labels per
 language, synonyms, a description, and bindings to ModelSpec record types and
@@ -129,7 +129,7 @@ is and when to use it rather than a similar one. Unknown keys are errors
 - A concept's `unit`, when `units-of` applies, is matched ignoring case against
   every label, alias and code of the named concept's values.
 
-## Kinds and the three relations
+## Kinds and the four relations
 
 Kinds: `entity` (a thing with instances), `property` (a property of an
 entity), `dimension` (a property that answers are grouped by), `measure` (a
@@ -204,7 +204,7 @@ the values known so far. `values` is allowed on a value set and nowhere else.
 - A **retired** value keeps its entry and its id. It still matches a stored
   value or a `unit` (reported as a notice, `retired-value`), and its words still
   count for the rule that one word names one value.
-- A list on an entity, a property or a dimension in a `meaning/draft-1` file has
+- A list on an entity, an attribute or a dimension in a `meaning/draft-1` file has
   no marker and is complete.
 - Tying the rows of a lookup table to the values of a value set is not part of
   the format: a lookup table is a concept of kind `entity` that extends the
@@ -295,7 +295,10 @@ The earlier names `entity` (for `instances`) and `foreign-key` (for
 - `match` (roles `value` and `display-name` only): how stored values name the
   concept's known values, `labels` (default) or `codes.<code>`. A dataset check
   requires every distinct stored value (nulls aside) to name exactly one known
-  value, with the difference that a value set is open: see below.
+  value, with the difference that a value set is open: see [Value sets](#value-sets),
+  above. In a draft-1 file an entity that carries `values` is checked against its
+  own list; in a draft-2 file an entity that extends a value set is not checked
+  against it.
 - A measure's `inputs` name what it is computed from; they are not bindings.
   Bind a measure only to a column that stores the measure itself.
 - Universal concepts, such as the ones in this repository, carry no bindings:
@@ -308,13 +311,13 @@ concept in this role". A *written link* comes from a binding line. A *derived
 link* is computed from the model and is never written. A binding line that only
 restates what the model already says is therefore optional, in both formats.
 
-> For a field that refers to a record type, each concept bound to that record
-> type with role instances applies to the field, with role reference, marked as
-> derived. If no concept is bound to the target, nothing is derived; if two are,
-> both apply. In the same way, the key of a record type bound to a concept
-> identifies that concept, with role identifier. A hand-written line for the
-> same field and concept takes the place of the derived one, and brings its
-> note.
+The rule in short: for a field that refers to a record type, each concept bound
+to that record type with role instances applies to the field, with role
+reference, marked as derived. If no concept is bound to the target, nothing is
+derived; if two are, both apply. In the same way, the key of a record type bound
+to a concept identifies that concept, with role identifier. A hand-written line
+for the same field and concept takes the place of the derived one, and brings
+its note.
 
 Made exact:
 
@@ -356,7 +359,8 @@ line; two concepts bound to one record type both apply; another role on the same
 field and concept does not replace the derived link.
 
 A reader that shows links marks a derived one. The reference checker's canonical
-form (`deriveLinks`, and `links` of `checkMeaningReport`) is a JSON array of
+form (`deriveLinks`, and `links` of `checkMeaningReport`, which is `null` unless
+the caller passes `derive: true`, and when the check found a problem) is a JSON array of
 objects with `concept`, `model` (`modelspec:///module.Name`), `field` (unless
 the role is `instances`), `role` (always the current name), `note` and `match`
 when the written line has them, and `"derived": true` on a derived link only.
@@ -375,7 +379,11 @@ looks at more than one concept:
 | `role: foreign-key` (either format) | `reference` |
 
 After that one set of rules serves both formats. A graph that is draft-1
-throughout behaves exactly as it did before draft 2.
+throughout is accepted or refused as it was before draft 2, the two new role
+names aside, with one exception: the reference checker does not validate a graph
+it merely resolves (below), so a draft-1 concept that names, with `of` or
+`extends`, a concept of kind `value-set` or `property` in such a graph is no
+longer refused, though every format line says draft-1.
 
 When a graph of one format pins a graph of the other, the single vocabulary
 means: `extends` between an `attribute` in one and a `property` or a `dimension`
@@ -385,8 +393,8 @@ in the other is allowed, in both directions; a measure's `inputs` and
 draft-2 graph; and a draft-2 file may name, with `values-of` or `units-of`, a
 draft-1 entity that carries `values`, whose list is the known values. Each file
 is validated against the schema of its own format, whichever graph it belongs
-to. Whether a list is open or complete is decided by the file that holds it. A
-reader does not validate a graph it merely resolves.
+to. Whether a list is open or complete is decided by the file that holds it. The
+reference checker does not validate a graph it merely resolves.
 
 ## How draft 1 differs
 
@@ -399,7 +407,9 @@ Draft 2 is draft 1 with the changes below. Everything else is the same.
 | Kind of a property | `attribute` | `property` (`attribute` is an error) |
 | Binding key | `property:` | `field:` (`property:` is an error) |
 | Kind for a list of values | none: `values` on an `entity`, `attribute` or `dimension` | `value-set`; `values` is allowed on it and nowhere else |
-| `of`, `values-of`, `units-of`, `extends` | name an entity (`extends`: an entity only extends an entity) | name an entity or a value set (an entity may extend a value set; a value set may extend a value set or an entity) |
+| `of`, `values-of`, `units-of`, `extends` | name, within one graph, an entity (`extends`: an entity only extends an entity) | name an entity or a value set (an entity may extend a value set; a value set may extend a value set or an entity) |
+| `values` together with `values-of` on one concept | an error | an error (`values` is allowed only on a value set, which may not carry `values-of`) |
+| Display names of a bound entity | an entity that carries `values` has its stored display names matched against that list | an entity carries no `values`; one that extends a value set is not compared with it (no problem, no notice) |
 | Stored values against a list | every stored value must name exactly one known value | a value set is open: an unmatched stored value is a notice unless `complete: true`; `retired: true` on a value |
 | Role names | `entity`, `foreign-key`; `instances` and `reference` are also accepted | `instances`, `reference`; `entity` and `foreign-key` are also accepted (a notice) |
 | Derived links | the rule above applies | the rule above applies |
@@ -444,8 +454,9 @@ Errors:
 13. a binding to an unlisted module, a missing record type or field, another
     repository, or one whose role does not fit the model.
 
-Notices, which never change a verdict: `earlier-format` (one per file in
-`meaning/draft-1`; the file is read in full), `earlier-role-name` (one per
+Notices, which never change a verdict: `earlier-format` (one for each file of
+the checked graph that is in `meaning/draft-1`, none for a pinned graph; the file
+is read in full), `earlier-role-name` (one per
 draft-2 file that uses `entity` or `foreign-key`), `unknown-value` (a stored
 value that matches no value of an open list), `retired-value` (a stored value or
 a `unit` that names a retired value).
