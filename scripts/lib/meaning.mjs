@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { parse as parseYaml } from 'yaml';
-import { parseHcl, toModelspecJson } from './modelspec.mjs';
+import { parseHcl, toModelspecJson, vocabularies, vocabularyOf } from './modelspec.mjs';
 
 // Where meaning:// repositories are read from, keyed by {host}/{org}/{repo}.
 // `git` fetches the repository at the ?ref= pin that the references carry (see
@@ -429,22 +429,26 @@ export function checkMeaning({ local, resolve: resolveOther, schemaPath, models:
         if (parsed.repo) { problems.push(`${where}: ${binding.model} points at another repository; this check resolves same-repository models only`); continue; }
         const model = models[parsed.module];
         if (!model) { problems.push(`${where}: ${binding.model}: module ${parsed.module} is not listed in models`); continue; }
-        const entity = model.entities?.[parsed.name];
+        // A model is read in the vocabulary its identifier names (1.0-draft: entities, properties; 1.0-draft-2: records, fields);
+        // one with no identifier is read in the earlier one, as it always was.
+        const words = vocabularyOf(model) ?? vocabularies.earlier;
+        const entity = model[words.records]?.[parsed.name];
         if (!entity) { problems.push(`${where}: ${binding.model}: module ${parsed.module} has no entity ${parsed.name}`); continue; }
         if (!binding.property) continue;
-        const member = entity.properties?.[binding.property];
+        const member = entity[words.fields]?.[binding.property];
         if (!member) { problems.push(`${where}: ${binding.model}: entity ${parsed.name} has no property ${binding.property}`); continue; }
         const at = `${where}: ${parsed.name}.${binding.property}`;
+        const reference = member[words.record];
         // identifier and display-name describe the rows of the concept's own entity.
         if (binding.role === 'identifier' || binding.role === 'display-name') {
           if (entities.length === 0) problems.push(`${at} has role ${binding.role}, but ${concept.id} has no entity binding, so it cannot be checked which entity the property must sit on`);
           else if (entities.length === 1 && !sameEntity(entities[0], parsed)) problems.push(`${at} has role ${binding.role}, but ${concept.id} is bound to the entity ${entities[0].name}; the property must be on that entity`);
         }
         if (binding.role === 'identifier' && !(entity.key ?? []).includes(binding.property)) problems.push(`${at} has role identifier but is not in the key of ${parsed.name} [${(entity.key ?? []).join(', ')}]`);
-        if (binding.role === 'display-name' && member.type !== 'string') problems.push(`${at} has role display-name but is ${member.entity ? `a reference to ${member.entity}` : an(member.type)}, not a string`);
-        if (binding.role === 'value' && member.entity) problems.push(`${at} has role value but is a reference to ${member.entity}; bind it with role foreign-key`);
+        if (binding.role === 'display-name' && member.type !== 'string') problems.push(`${at} has role display-name but is ${reference ? `a reference to ${reference}` : an(member.type)}, not a string`);
+        if (binding.role === 'value' && reference) problems.push(`${at} has role value but is a reference to ${reference}; bind it with role foreign-key`);
         if (binding.role === 'foreign-key') {
-          if (!member.entity) { problems.push(`${at} has role foreign-key but is not a reference (it is ${an(member.type)})`); continue; }
+          if (!reference) { problems.push(`${at} has role foreign-key but is not a reference (it is ${an(member.type)})`); continue; }
           // The reference must point at the entity whose rows are the instances:
           // this concept's own (an entity) or those of its values-of entity.
           let target = null;
@@ -457,8 +461,8 @@ export function checkMeaning({ local, resolve: resolveOther, schemaPath, models:
           if (!target) continue; // an unresolvable values-of is reported above
           // Only this repository's own bindings name models this check can read.
           const expected = target.repo === local ? entityBindings(target.concept) : [];
-          if (expected.length === 0) problems.push(`${at} has role foreign-key, but ${target.concept.id} has no entity binding in this repository, so it cannot be checked that ${member.entity} holds its instances; bind ${target.concept.id} (or a concept of this repository that extends it) to its entity`);
-          else if (!expected.some((e) => e.module === parsed.module && e.name === member.entity)) problems.push(`${at} references ${member.entity}, but the instances of ${target.concept.id} are ${expected.map((e) => e.name).join(', ')} rows`);
+          if (expected.length === 0) problems.push(`${at} has role foreign-key, but ${target.concept.id} has no entity binding in this repository, so it cannot be checked that ${reference} holds its instances; bind ${target.concept.id} (or a concept of this repository that extends it) to its entity`);
+          else if (!expected.some((e) => e.module === parsed.module && e.name === reference)) problems.push(`${at} references ${reference}, but the instances of ${target.concept.id} are ${expected.map((e) => e.name).join(', ')} rows`);
         }
       }
     }
