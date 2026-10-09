@@ -1,9 +1,11 @@
 // The conformance cases of the meaning/draft-2 contract (sections 4.2, 4.3, 5.6 and 7), run against the reference
 // checker. A test is named by its case id (F format and words, R roles, K kinds, V value sets, X graphs of
 // different formats, D derived links, S stored values). An accepted case asserts that there is no problem and which
-// notices there are; a refused case asserts the rules of its problems, not its notices; a D case asserts the link
-// list (the whole list in most; D-13 compares the links of one concept and field; D-14 and D-19 assert that there
-// is none). A few tests are not cases of the contract: one for the interface, one for 4.2, one for effectiveValues,
+// notices there are; a refused case asserts that the rules it names are among the rules of its problems and does
+// not look at its notices, except a refused S case (S-03, S-05, S-06, S-09), whose problems carry no rule: it
+// asserts the number and the text of its problems, and S-03, S-06 and S-09 assert that there is no notice; a D case
+// asserts the link list (the whole list in most; D-13 compares the links of one concept and field; D-14 and D-19
+// assert that there is none). A few tests are not cases of the contract: one for the interface, one for 4.2, one for effectiveValues,
 // one for a concepts that is no list, and V-20 to V-30 for the draft-1 originals of the twins. CC0-1.0.
 //
 // The Node checker has no severities: the four notices of the contract (earlier-format, earlier-role-name,
