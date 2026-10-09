@@ -47,7 +47,8 @@ pin the version with `?ref=` and a full commit id:
   your checks.
 - The schemas are in the same checkout: `meaning.schema.json` (draft 1) at your
   pin is the schema your concepts were written against. `meaning.draft-2.schema.json`
-  (draft 2) is there only at a commit that has the file; no earlier commit does.
+  (draft 2) is in the checkout only from the commit that adds it; a pin to an
+  earlier commit has `meaning.schema.json` alone.
 
 A concept's meaning never changes under the same id; a different meaning gets
 a new id, and old concepts are deprecated, not deleted, so pinned references

@@ -359,8 +359,8 @@ line; two concepts bound to one record type both apply; another role on the same
 field and concept does not replace the derived link.
 
 A reader that shows links marks a derived one. The reference checker's canonical
-form (`deriveLinks`, and `links` of `checkMeaningReport`, which is `null` unless
-the caller passes `derive: true`, and when the check found a problem) is a JSON array of
+form (`deriveLinks`, and `links` of `checkMeaningReport`, which is `null` when
+the caller does not pass `derive: true` or the check found a problem) is a JSON array of
 objects with `concept`, `model` (`modelspec:///module.Name`), `field` (unless
 the role is `instances`), `role` (always the current name), `note` and `match`
 when the written line has them, and `"derived": true` on a derived link only.
@@ -381,9 +381,12 @@ looks at more than one concept:
 After that one set of rules serves both formats. A graph that is draft-1
 throughout is accepted or refused as it was before draft 2, the two new role
 names aside, with one exception: the reference checker does not validate a graph
-it merely resolves (below), so a draft-1 concept that names, with `of` or
-`extends`, a concept of kind `value-set` or `property` in such a graph is no
-longer refused, though every format line says draft-1.
+it merely resolves (below), so a concept of kind `value-set` or `property` in
+such a graph is taken as that kind, though every format line says draft-1. In a
+draft-1 file that names it, these are then no longer problems: `of`, `values-of`
+or `units-of` naming the value set; an entity that extends the value set; an
+attribute or a dimension that extends the property; and a measure that names the
+property in `inputs` or `dimensions`.
 
 When a graph of one format pins a graph of the other, the single vocabulary
 means: `extends` between an `attribute` in one and a `property` or a `dimension`
