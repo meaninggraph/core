@@ -57,7 +57,7 @@ subsets, not the full ISO lists.
 ```sh
 npm ci
 npm run check   # every *.meaning.yaml against the schema, then the cross-concept rules
-npm test        # the checks fail on each kind of broken file
+npm test        # the checks fail on each kind of broken file; the ModelSpec reader reads both spellings
 ```
 
 CI runs both on every pull request (`.github/workflows/check.yml`). Besides the
@@ -66,21 +66,42 @@ schema and the cross-concept rules in `FORMAT.md`, this repository requires
 datasets), no meaning file outside the root, and no label or synonym shared by
 two concepts in a language unless one is a kind of the other.
 
-`scripts/lib/meaning.mjs` and `scripts/lib/modelspec.mjs` are byte-for-byte
+`scripts/lib/meaning.mjs` and `scripts/lib/modelspec.mjs` began as byte-for-byte
 copies of the checker in [`datatug/chinookdb`](https://github.com/datatug/chinookdb)
-(`scripts/lib/`, commit `ae1f505db35fcecf1ff16c8ba3dbb293b7d50dda`),
-which checks its own meaning file with the same code. They are copied rather
-than imported because the checker has no package of its own yet and chinookdb
-reads this repository at a pinned commit, so a dependency the other way would be
-circular; once a pinned commit of this repository contains them, chinookdb can
-read them from its pin and drop its copy. Change them there and copy them back
-whole.
+(`scripts/lib/`, commit `ae1f505db35fcecf1ff16c8ba3dbb293b7d50dda`). They are
+not copies any more, and neither repository is the source of the other:
+
+- `scripts/lib/meaning.mjs` is maintained here. Where it checks a binding
+  against a model it reads the model's record types, members and references in
+  the vocabulary the model's format identifier names; everything else, and
+  everything it exports, is as it was. chinookdb keeps its own, older copy of
+  the file and checks its meaning file with the `meaninggraph` command-line
+  tool, so the two no longer move together.
+- `scripts/lib/modelspec.mjs` is the ModelSpec reader of the
+  [ModelSpec registry](https://github.com/modelspec-org/registry)
+  (`scripts/lib/modelspec.mjs`), ported: it reads both spellings of ModelSpec
+  (`record`, `field`, `record =`, format `1.0-draft-2`; and the earlier `entity`,
+  `property`, `entity =`, format `1.0-draft`), refuses the removed and reserved
+  constructs, and keeps names in objects without a prototype, so a name such as
+  `constructor` or `toString` is an ordinary name. Only the functions this
+  repository calls are taken, plus a comparison with published data that the
+  registry does not have. The dataset repositories
+  [`demo-db/chinook`](https://github.com/demo-db/chinook) and
+  [`demo-db/northwind`](https://github.com/demo-db/northwind) carry the same
+  code; the files differ only in their header comments, and
+  `scripts/test-modelspec.mjs` is the same file in each.
+
+There is no mechanical sync. A change to how ModelSpec is read is made in the
+registry's reader first, then ported to this file and to the dataset copies in
+the same way, with `scripts/test-modelspec.mjs` run in each repository. The files are
+copied rather than imported because the checker has no package of its own yet.
 
 ## Licence
 
 Everything in this repository, the schema, the checks and `FORMAT.md` included,
 is dedicated to the public domain under [CC0-1.0](LICENSE): copy it, vendor it
 and change it without attribution. ISO codes are facts; names and descriptions
-are original. The two checker files copied from chinookdb (MIT there) are
-CC0-1.0 here, as their author's dedication. A vendored copy of the concept
+are original. The two checker files that began as copies of chinookdb's (MIT
+there) are CC0-1.0 here, as their author's dedication, and the ModelSpec reader
+ported into one of them comes from the registry, which is CC0-1.0. A vendored copy of the concept
 files keeps this README and the `LICENSE` file byte for byte.

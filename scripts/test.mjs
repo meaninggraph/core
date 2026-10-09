@@ -9,6 +9,8 @@ import { join } from 'node:path';
 import { after, test } from 'node:test';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { checkCore, root } from './check.mjs';
+import { checkMeaning, createResolver, loadMeaningDir } from './lib/meaning.mjs';
+import { parseHcl, serializeModel, toModelspecJson } from './lib/modelspec.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'meaning-core-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
@@ -107,4 +109,171 @@ test('the command line exits 0 on the repository and 1 with the problems on a br
   assert.match(run.stderr, /error: geo.meaning.yaml: schema: \/concepts\/0 must have required property 'description'/);
   assert.match(run.stderr, /"people" \(en\) is also a word of concept population/);
   assert.match(run.stderr, /\d+ problems in 6 files/);
+});
+
+// ---- bindings to a ModelSpec model, in either spelling ----------------------------------------------------------
+// The universal concepts here carry no bindings (a dataset repository's meaning file has them), but the checker is
+// shared with those repositories and reads their models: HCL in the current spelling (record, field, record =) or the
+// earlier one (entity, property, entity =), and the JSON form of a model in either vocabulary.
+
+const shopSelf = 'example.test/org/shop';
+const shopHcl = `entity "Customer" {
+  key = ["id"]
+  property "id" {
+    type = "int"
+    required = true
+  }
+  property "name" {
+    type = "string"
+  }
+}
+
+entity "Order" {
+  key = ["id"]
+  property "id" {
+    type = "int"
+    required = true
+  }
+  property "customer" {
+    entity = "Customer"
+  }
+  property "note" {
+    type = "string"
+  }
+}
+`;
+const shopCurrentHcl = shopHcl.replace(/^entity "/gm, 'record "').replace(/^(\s*)property "/gm, '$1field "').replace(/^(\s*)entity =/gm, '$1record =');
+const binding = (name, property, role) => ({ model: `modelspec:///shop.${name}`, ...(property ? { property } : {}), role });
+const shopMeaning = (extra = []) => ({
+  format: 'meaning/draft-1',
+  id: 'shop',
+  name: 'Shop',
+  description: 'A fixture.',
+  license: 'CC0-1.0',
+  models: { shop: 'shop.modelspec.hcl' },
+  concepts: [
+    { id: 'customer', kind: 'entity', labels: { en: 'Customer' }, description: 'A buyer.', bindings: [binding('Customer', null, 'entity'), binding('Customer', 'id', 'identifier'), binding('Customer', 'name', 'display-name')] },
+    { id: 'order', kind: 'entity', labels: { en: 'Order' }, description: 'A purchase.', bindings: [binding('Order', null, 'entity'), binding('Order', 'id', 'identifier')] },
+    { id: 'buyer', kind: 'attribute', of: 'order', 'values-of': 'customer', labels: { en: 'Buyer' }, description: 'Who placed the order.', bindings: [binding('Order', 'customer', 'foreign-key')] },
+    ...extra,
+  ],
+});
+function shopProblems({ hcl, meaning = shopMeaning(), models }) {
+  const dir = mkdtempSync(join(scratch, 'shop-'));
+  writeFileSync(join(dir, 'shop.meaning.yaml'), stringifyYaml(meaning, { lineWidth: 0 }));
+  writeFileSync(join(dir, 'shop.modelspec.hcl'), hcl);
+  const local = loadMeaningDir(dir, shopSelf);
+  return checkMeaning({ local, resolve: createResolver({ root: dir, sources: {} }), schemaPath: join(root, 'meaning.schema.json'), selfRepo: shopSelf, models }).map((problem) => problem.replaceAll(`${dir}/`, ''));
+}
+
+test('bindings are checked against a model in the earlier spelling and in the current one alike', () => {
+  assert.deepEqual(shopProblems({ hcl: shopHcl }), []);
+  assert.deepEqual(shopProblems({ hcl: shopCurrentHcl }), []);
+  assert.notEqual(shopCurrentHcl, shopHcl);
+  const broken = (extra) => shopMeaning(extra);
+  const cases = [
+    [[{ id: 'a1', kind: 'attribute', of: 'order', labels: { en: 'A1' }, description: 'x.', bindings: [binding('Order', 'nope', 'value')] }], /modelspec:\/\/\/shop.Order: entity Order has no property nope/],
+    [[{ id: 'a2', kind: 'attribute', of: 'order', labels: { en: 'A2' }, description: 'x.', bindings: [binding('Nope', 'id', 'value')] }], /module shop has no entity Nope/],
+    [[{ id: 'a3', kind: 'attribute', of: 'order', labels: { en: 'A3' }, description: 'x.', bindings: [binding('Order', 'customer', 'value')] }], /Order.customer has role value but is a reference to Customer; bind it with role foreign-key/],
+    [[{ id: 'a4', kind: 'attribute', of: 'order', labels: { en: 'A4' }, description: 'x.', bindings: [binding('Order', 'customer', 'display-name')] }], /Order.customer has role display-name but is a reference to Customer, not a string/],
+    [[{ id: 'a5', kind: 'attribute', of: 'order', 'values-of': 'customer', labels: { en: 'A5' }, description: 'x.', bindings: [binding('Order', 'note', 'foreign-key')] }], /Order.note has role foreign-key but is not a reference \(it is a string\)/],
+    [[{ id: 'a6', kind: 'attribute', of: 'order', labels: { en: 'A6' }, description: 'x.', bindings: [binding('Order', 'note', 'identifier')] }], /Order.note has role identifier but is not in the key of Order \[id\]/],
+  ];
+  for (const [extra, pattern] of cases) {
+    for (const hcl of [shopHcl, shopCurrentHcl]) assert.match(shopProblems({ hcl, meaning: broken(extra) }).join('\n'), pattern);
+  }
+  // A reference that points at another record type than the concept's values are is reported by the record's name.
+  const wrongTarget = [{ id: 'a7', kind: 'attribute', of: 'order', 'values-of': 'order', labels: { en: 'A7' }, description: 'x.', bindings: [binding('Order', 'customer', 'foreign-key')] }];
+  for (const hcl of [shopHcl, shopCurrentHcl]) assert.match(shopProblems({ hcl, meaning: broken(wrongTarget) }).join('\n'), /Order.customer references Customer, but the instances of order are Order rows/);
+});
+
+test('a model handed over as JSON is read in the vocabulary its identifier names', () => {
+  const earlier = toModelspecJson(parseHcl(shopHcl), { id: 'shop', name: 'shop', version: '1' });
+  const current = toModelspecJson(parseHcl(shopCurrentHcl), { id: 'shop', name: 'shop', version: '1' });
+  assert.equal(earlier.modelspec, '1.0-draft');
+  assert.equal(current.modelspec, '1.0-draft-2');
+  for (const json of [earlier, current]) assert.deepEqual(shopProblems({ hcl: shopHcl, models: { shop: JSON.parse(serializeModel(json)) } }), []);
+  // No identifier at all is read as it always was, in the earlier vocabulary.
+  const { modelspec: _identifier, ...unmarked } = JSON.parse(serializeModel(earlier));
+  assert.deepEqual(shopProblems({ hcl: shopHcl, models: { shop: unmarked } }), []);
+  // An identifier that names one vocabulary over keys of the other finds no record types.
+  const mixed = { ...JSON.parse(serializeModel(earlier)), modelspec: '1.0-draft-2' };
+  assert.match(shopProblems({ hcl: shopHcl, models: { shop: mixed } }).join('\n'), /module shop has no entity Customer/);
+});
+
+test('a model in the earlier or the current spelling that declares a removed construct is refused when it is loaded', () => {
+  for (const hcl of [shopHcl, shopCurrentHcl]) {
+    assert.match(shopProblems({ hcl: `${hcl}\ncollection "c" {\n}\n` }).join('\n'), /shop.meaning.yaml: models: line \d+: the collection block was removed from ModelSpec/);
+    assert.match(shopProblems({ hcl: `${hcl}\nindex "i" {\n}\n` }).join('\n'), /shop.meaning.yaml: models: line \d+: the index block is reserved by ModelSpec/);
+  }
+});
+
+// ---- model members named like properties of Object.prototype ---------------------------------------------------
+// Names are kept in objects without a prototype and asked with Object.hasOwn, so constructor, toString, __proto__ and
+// the rest are ordinary names: a model may declare them, and a binding to one finds it only when the model does.
+
+const prototypeHcl = (spelling) => {
+  const [record, member, reference] = spelling === 'current' ? ['record', 'field', 'record'] : ['entity', 'property', 'entity'];
+  return `${record} "constructor" {
+  key = ["toString"]
+  ${member} "toString" {
+    type = "int"
+    required = true
+  }
+  ${member} "__proto__" {
+    type = "string"
+  }
+}
+
+${record} "valueOf" {
+  key = ["id"]
+  ${member} "id" {
+    type = "int"
+    required = true
+  }
+  ${member} "hasOwnProperty" {
+    ${reference} = "constructor"
+  }
+}
+
+enum "isPrototypeOf" {
+  values = ["a"]
+  hasOwnProperty = true
+}
+`;
+};
+const prototypeMeaning = (bindings) => ({
+  format: 'meaning/draft-1',
+  id: 'shop',
+  name: 'Shop',
+  description: 'A fixture.',
+  license: 'CC0-1.0',
+  models: { shop: 'shop.modelspec.hcl' },
+  concepts: [{ id: 'thing', kind: 'entity', labels: { en: 'Thing' }, description: 'A thing.', bindings }],
+});
+
+test('a model may declare members named like Object.prototype properties, and a binding finds them only when it declares them', () => {
+  for (const spelling of ['earlier', 'current']) {
+    const hcl = prototypeHcl(spelling);
+    const declared = [binding('constructor', null, 'entity'), binding('constructor', 'toString', 'identifier'), binding('constructor', '__proto__', 'display-name')];
+    assert.deepEqual(shopProblems({ hcl, meaning: prototypeMeaning(declared) }), [], spelling);
+    const json = toModelspecJson(parseHcl(hcl), { id: 'shop', name: 'shop', version: '1' });
+    assert.deepEqual(Object.keys(json[spelling === 'current' ? 'records' : 'entities']), ['constructor', 'valueOf']);
+    assert.deepEqual(Object.keys(json.enums.isPrototypeOf), ['values', 'hasOwnProperty']);
+    // The reference to the record type constructor is read like any other.
+    assert.deepEqual(shopProblems({ hcl, meaning: prototypeMeaning([binding('valueOf', 'hasOwnProperty', 'value')]) }).join('\n').match(/is a reference to constructor; bind it with role foreign-key/)?.length, 1, spelling);
+    // Not declared: a binding to the name of an Object.prototype property is refused, as it is for any other missing name.
+    const notDeclared = (extra) => shopProblems({ hcl, meaning: prototypeMeaning(extra) }).join('\n');
+    assert.match(notDeclared([binding('toString', null, 'entity')]), /modelspec:\/\/\/shop.toString: module shop has no entity toString/, spelling);
+    assert.match(notDeclared([binding('constructor', 'valueOf', 'value')]), /entity constructor has no property valueOf/, spelling);
+    assert.match(notDeclared([binding('valueOf', 'toString', 'value')]), /entity valueOf has no property toString/, spelling);
+  }
+});
+
+test('a name declared twice is still a duplicate, whatever it is called', () => {
+  for (const name of ['constructor', '__proto__', 'plain']) {
+    assert.throws(() => toModelspecJson(parseHcl(`record "${name}" {\n}\nentity "${name}" {\n}\n`), { id: 'm', name: 'm', version: '1' }), new RegExp(`duplicate entity "${name}"`));
+    assert.throws(() => parseHcl(`record "A" {\n  ${name} = 1\n  ${name} = 2\n}\n`), new RegExp(`duplicate attribute ${name}`));
+    assert.throws(() => toModelspecJson(parseHcl(`record "A" {\n  field "${name}" {\n  }\n  property "${name}" {\n  }\n}\n`), { id: 'm', name: 'm', version: '1' }), new RegExp(`duplicate property "${name}" in record "A"`));
+  }
 });
