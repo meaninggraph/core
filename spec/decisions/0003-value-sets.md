@@ -36,15 +36,64 @@ This decision has three parts, a, b and c, as its card has. The owner answered p
 in conversation before the card existed, and parts b and c about two hours later. The
 record keeps that order.
 
-**On record, the format today.** [`FORMAT.md`](../../FORMAT.md) describes
-`meaning/draft-1`. A concept may carry a list of known values under the key `values`.
-The two lists in this repository sit on concepts of kind `entity`: `country` in
-`geo.meaning.yaml` and `currency` in `assets.meaning.yaml`. The page says: "A dataset
-check requires every distinct stored value (nulls aside) to name exactly one known
-value."
+**On record, the format when this record was written.**
+[`FORMAT.md` at commit `dd5ce32`](https://github.com/meaninggraph/core/blob/dd5ce32c4554c0833c59925bbea1e7a7e5ed01e7/FORMAT.md)
+describes `meaning/draft-1`. A concept may carry a list of known values under the key
+`values`. At that commit the two lists in this repository sit on concepts of kind
+`entity`: `country` in `geo.meaning.yaml` and `currency` in `assets.meaning.yaml`.
+That page says: "A dataset check requires every distinct stored value (nulls aside)
+to name exactly one known value."
 
-**On record, the conversation that led to part a.** All on 8 October 2026, from the
-stored record of that conversation (not published). At 20:57:41 UTC the owner wrote:
+**On record, the conversation that led to this decision.** All on 8 October 2026,
+from the stored record of that conversation (not published). At 20:53:30 UTC the
+owner asked:
+
+> Should MeaningGraph have concept of enums? Like Gender = male|female (but how to deal with expansion?)
+
+At 20:54:59 UTC the session answered. Its message, in full:
+
+> **Yes, and it mostly already has one.** I checked the format: any concept can carry `values` ("known values"), each with an id, labels per language, aliases and codes. Today only country and currency use it. So Gender needs no new kind; it is one concept with a value list.
+>
+> The split I would keep:
+>
+> - **MeaningGraph says what each value means and how it is written.** `male` is "Male", "M", "1", "мужской". This is shared by every database.
+> - **ModelSpec's `enum` says which values one column accepts.** Database A's enum is `["M","F"]`, database B's is `[0,1,2,9]`, and the binding says which code each one stores.
+>
+> ```yaml
+> - id: gender
+>   kind: dimension
+>   values:
+>     - id: male
+>       labels: {en: Male}
+>       aliases: {en: [M, man]}
+>       codes: {iso5218: "1"}
+>     - id: female
+>       ...
+> ```
+>
+> **Expansion:** treat MeaningGraph's list as "values known so far", never "all values allowed".
+>
+> - **Adding a value is always safe**, because nobody may assume the list is complete.
+> - **A value id never changes meaning and is never deleted**, the same rule the format already has for concept ids. If "other" later splits in two, add two new ids and retire the old one.
+> - **A stored value that matches nothing is reported as unknown**, not as an error.
+> - **The closed list stays in ModelSpec**, where widening it is a deliberate change to one model.
+>
+> Three things in today's format work against this:
+>
+> - **Every list is treated as closed.** The dataset check requires every stored value to match a known one. It should report instead, with an opt-in "complete" marker for lists that really are closed, such as days of the week.
+> - **A value cannot be retired.** There is no field for it.
+> - **Sharing a list is awkward.** It works only by modelling the list as an entity, as country is, which reads oddly for gender or a status. A project also cannot add its own values on top of a shared list.
+>
+> The proposal keeps both constructs and says they are different things, but it does not cover expansion. This would be an addition to it.
+
+**Recorder's account of that message.** It puts to him what the card later calls the
+three rules of part b. Two of them are in it in nearly the card's words: "A value id
+never changes meaning and is never deleted" and "A stored value that matches nothing
+is reported as unknown". For the third it says, as a gap of today's format, "A value
+cannot be retired." In the bullet that begins "Every list is treated as closed." it
+also proposes a marker by which a list can say that it is complete.
+
+At 20:57:41 UTC the owner replied:
 
 > I want the values to be described on top levels. Maybe have an analogies to enums. They should not be hidden under entity. As it raises question why modelspec has enum and meaninggraph does not
 
@@ -96,6 +145,10 @@ At 21:00:01 UTC the session replied. Its message, in full:
 >
 > The proposal document does not contain this yet; I have recorded your direction so it goes into the next revision.
 
+Recorder's note: "issue #21" in that message is
+[issue 21 of `specscore/modelspec`](https://github.com/specscore/modelspec/issues/21).
+This repository has no issue of that number.
+
 **On record, the questions in chat for parts b and c.** At 22:55:07 UTC the session
 wrote to the owner (the same stored record). The message asked:
 
@@ -117,15 +170,21 @@ And, under the heading "Corrections to things I told you in this conversation":
 
 > - **Value sets reach further than I said.** I said only `values-of` and `units-of` must accept one; `of` and `extends` must as well. That is why D15c is a separate question and not covered by your "OK".
 
-**On record, the card.** Card D15 of that revision is headed "Direction, three parts.
-Added in revision 2". Its question reads:
+**On record, the card as it stood when he answered parts b and c.** The session wrote
+the proposal's second revision to disk at 22:54:21 UTC and kept a copy of what it
+wrote (not published). The stored record shows one and the same checksum for the file
+on disk at 22:54:21 UTC, at 23:01:11 UTC, which is 20 seconds after his reply, and at
+23:02:43 UTC, just before the session overwrote the file. The kept copy has that
+checksum. So the kept copy is, byte for byte, the file that was on disk when he
+answered, and the card is quoted from it. Card D15 is headed "Direction, three parts.
+Part a is answered; parts b and c are open". Its question reads:
 
 > a. MeaningGraph gains a kind of concept for a list of values, value-set, the counterpart of ModelSpec's enum. values is allowed there and nowhere else. b. A value set is open: it lists the values known so far. c. A value set may stand wherever an entity stands today.
 
 On the card the words `value-set` and `values` are set in code type. The card says
-more about part b than the chat question did:
+more about part b than the chat question of 22:55:07 UTC did:
 
-> Part b, three rules. A stored value that matches nothing is reported as unknown, not as an error, unless the set is marked complete. A value's id never changes meaning and is never deleted. A value can be marked retired.
+> Part b, three rules. A stored value that matches nothing is reported as unknown, not as an error, unless the set is marked complete. A value's id never changes meaning and is never deleted. A value can be marked retired. Today's format does the opposite of the first and has no key for the third. I described these to you before you said OK, but you were answering a different question, so I do not count them as answered.
 
 And about part c it says what the other choice would mean:
 
@@ -134,24 +193,38 @@ And about part c it says what the other choice would mean:
 The card offered three answers for each part. For part a: "Approve value-set",
 "Another name" and "Leave lists as they are". For part b: "Approve the three rules",
 "Change" and "Keep lists complete". For part c: "Approve", "Change" and "Keep country
-and currency as entities".
+and currency as entities". "Approve value-set" was marked as chosen; no answer for
+part b or for part c was. The card had a field for a note. Below its sentence about
+what approval authorises, which is quoted under "What the approval authorises", it
+said:
+
+> Your answer to part a, 8 October 2026: "OK on value set." Parts b and c are not answered. I recommend both.
+
+**On record, what the session changed on the card after his answer.** At 23:02 UTC
+the session rewrote the card to record his answers and overwrote the file. The script
+that made the changes is kept (not published), and the file on disk today is that
+later copy. On this card the heading became "Direction, three parts. Added in
+revision 2"; "so I do not count them as answered." became "so I asked them
+separately."; "Part c is wider than what you said OK to." became "Part c is wider than
+what you first said OK to, so it was asked separately too."; "The identifier was not
+part of what you said OK to; confirm it or change the string in the note." became "The
+identifier was not part of what you first said OK to; your yes to D14 as written fixed
+it."; the line about his answers was rewritten to give his answers to parts b and c;
+and the answers "Approve the three rules" and, for part c, "Approve" were marked as
+chosen. The later wording is the session's. It was not put to him.
 
 **Recorder's account of the card.** The card was written after his answer to part a.
-It is read from the copy of the proposal that is on disk, which was saved at 23:02
-UTC on 8 October 2026, after his answers to parts b and c and with all his answers
-already in it. The copy that was on disk when he answered is not kept, so the
-recorder cannot say that the card read exactly this at that moment. Whether he opened
-the file between the session's message of 22:55:07 UTC and his reply, five minutes
-and 44 seconds later, is not known. What was put to him in chat is on record word for
-word.
+Whether he opened the file between the session's message of 22:55:07 UTC and his
+reply, five minutes and 44 seconds later, is not known. What was put to him in chat
+is on record word for word.
 
 ## Decision
 
 ### Part a: a kind for a list of values
 
 **The owner's words.** On 8 October 2026 at 21:07:30 UTC (22:07:30 for him, the same
-date), in reply to the session's message quoted in full above, the owner wrote a
-message whose first line is:
+date), in reply to the session's message of 21:00:01 UTC, which is quoted in full in
+the Context, the owner wrote a message whose first line is:
 
 > OK on value set.
 
@@ -175,29 +248,40 @@ the same stored record (not published). It reads, in full:
 
 > D14a yes, D14b yes, D15b yes, D15c yes
 
-Its last two answers are this record's. The card, in the copy on disk, gives these two
+Its last two answers are this record's. The later copy of the card gives these two
 answers the date 9 October 2026, which is his local date.
 
 **Recorder's account.** So the decision of parts b and c is the two chat questions he
 answered yes to: a value set is open, meaning it lists the values known so far; and a
-value set may stand wherever an entity stands today. The three rules of part b are on
-the card and were not in the chat question. The card's answer for part b is labelled
-"Approve the three rules", and the copy on disk shows it chosen. Whether he read the
-three rules before his yes is not known, as said above.
+value set may stand wherever an entity stands today.
+
+What is on record about the three rules of part b. The session put them to him in
+chat at 20:54:59 UTC, in the message quoted in full in the Context and in the form
+described there, before his "OK on value set." The card as it stood says of that: "I
+described these to you before you said OK, but you were answering a different
+question, so I do not count them as answered." The chat question he said yes to at
+23:00:51 UTC named only the open list:
+"a value set is open, meaning it lists the values known so far". The card's answer
+for part b is labelled "Approve the three rules". In the card as it stood that answer
+was not marked as chosen; the session marked it after his reply. Whether he read the
+card is not known.
 
 ### What the approval authorises
 
-**On record, the card,** in the copy saved after his answers:
+**On record, the card as it stood when he answered parts b and c:**
 
-> Approval authorises: a change to MeaningGraph's format document, schema and CLI in Phase 3, alongside D6, under a new format identifier, meaning/draft-2. The identifier was not part of what you first said OK to; your yes to D14 as written fixed it. With part c, the change of kind of the two lists in the core graph, by its maintainers. Section 5 has the example and the cost.
+> Approval authorises: a change to MeaningGraph's format document, schema and CLI in Phase 3, alongside D6, under a new format identifier, meaning/draft-2. The identifier was not part of what you said OK to; confirm it or change the string in the note. With part c, the change of kind of the two lists in the core graph, by its maintainers. Section 5 has the example and the cost.
 
 **Recorder's account.** The sentence is the proposal author's wording. The format
 document is `FORMAT.md` in this repository and the schema is `meaning.schema.json`.
-"D6" is [decision 0001](0001-derived-links-and-two-role-names.md). The identifier, and
-whose reading it is that his yes fixed it, are in
+"D6" is [decision 0001](0001-derived-links-and-two-role-names.md). The card asked him
+to confirm the identifier or to change the string in the note. He sent no note; what
+follows from that is in
 [decision 0002](0002-kind-property-binding-key-field-and-the-format-identifier.md#the-format-identifier).
-"The two lists in the core graph" are `country` and `currency` in this repository.
-The card does not say what counts as the maintainers' consent (see N46 below).
+The words "your yes to D14 as written fixed it", which stand at this place in the
+later copy, are the session's and were written after his answer. "The two lists in the
+core graph" are `country` and `currency` in this repository. The card does not say
+what counts as the maintainers' consent (see N46 below).
 
 ### Takes effect
 
@@ -208,11 +292,15 @@ change of words. ModelSpec's
 lists the phases and says of Phase 3 that it starts "On the owner's word, after Phase
 2."
 
-**On record, the words on which Phase 3 started.** Decision 0022 records them under 9
-October 2026. The owner's message: "Can you do other phases or do I need new session?
-You don't need to depend on DataTug lifecycle". Decision 0022 says that the session
-recording it "reads it as releasing Phase 2 and, after it, Phase 3". It also records a
-later message of his that day: "proceed".
+**On record, the words on which Phase 3 started.** Decision 0022 has this entry:
+
+> 2026-10-09 — The owner lifted the condition that the format change wait for the launch. His message: "Can you do other phases or do I need new session? You don't need to depend on DataTug lifecycle". The session recording this reads it as releasing Phase 2 and, after it, Phase 3. Phase 2 started the same day.
+
+**On record, the word "proceed".** A later entry of decision 0022, under the same
+date, is about another answer of his, on making the old spelling an error, and about
+the session's reading of that answer. That entry ends:
+
+> His next message was "proceed", which does not say whether the reading is right.
 
 **Recorder's account.** Not in force when this record was written. `FORMAT.md` at
 commit `dd5ce32` describes `meaning/draft-1`, which has no kind `value-set`, and
@@ -249,12 +337,17 @@ About part a, the kind and where `values` may stand:
 - **N11. Which other keys a value set may carry.** The contract author's
   recommendation.
 - **N9. Whether a value set may carry bindings.** The contract author's
-  recommendation. The proposal leaves open how the rows of a lookup table are tied to
-  the values of a value set.
+  recommendation is that it may not, for now. The proposal leaves open how the rows
+  of a lookup table are tied to the values of a value set. The recommendation departs
+  from the session's message of 21:00:01 UTC, to which he said OK: that message says
+  that "A `Gender` or `Country` table binds to the same value set." and that an enum
+  "is bound to a value set the way a record type is bound to an entity".
 - **N13. Whether a checker compares a model's enum with a value set.** The card
   says that an enum's values "can then be checked against a value set"; it does not
   say that a checker does so. The contract's author leaves the check out for now; it
-  is on the plan.
+  is on the plan. That departs from the session's message of 21:00:01 UTC, to which
+  he said OK: that message says that "each enum value must name exactly one value of
+  the set".
 - **N12. How a project adds values of its own to a shared value set.** Left open by
   the proposal. Nobody's choice yet; it is on the plan.
 - **N40. Whether the test files of the Go checker that carry `values` are changed.**
@@ -318,7 +411,9 @@ About the core graph's two lists:
   the second of the format questions. His "5 - ok" and "2 - correct" are quoted in
   decision 0002: the core graph first, then each of the six dataset graphs.
 - **N43. The identifier `meaning/draft-2`,** which the card names. The session's
-  suggestion and the session's reading; see decision 0002.
+  suggestion. The card as it stood asked him to confirm it or to change the string in
+  the note; he sent no note. That his yes fixed it is the session's reading; see
+  decision 0002.
 
 About the work as a whole:
 
@@ -370,8 +465,8 @@ entities". He answered "D15c yes" to the chat question.
 
 Recorder's account, written on 9 October 2026.
 
-- This record changes no rule of the format. `FORMAT.md` gains one line that links
-  to the three decision records.
+- This record changes no rule of the format. `FORMAT.md` gains one short paragraph
+  that links to the three decision records.
 - No meaning file is edited by it. `country` and `currency` stay concepts of kind
   `entity` until the core graph is converted.
 - The points listed under "Not decided by the owner" stay open or stay somebody

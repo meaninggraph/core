@@ -32,12 +32,13 @@ session he was talking with on 8 October 2026. "The lead" is the assistant sessi
 that coordinated the work on 9 October 2026. The date in the header above is the day
 this record was written, not the day of his answer.
 
-**On record, the format today.** [`FORMAT.md`](../../FORMAT.md) describes
-`meaning/draft-1`. A binding line of a meaning file says that a ModelSpec entity, or
-one property of it, holds a concept in a role. Two of the roles are `entity` ("the
-rows of the entity are instances of the concept") and `foreign-key` ("the property
-references the entity whose rows are the concept's instances"). The page has no rule
-by which a reader works out a link that nobody wrote.
+**On record, the format when this record was written.**
+[`FORMAT.md` at commit `dd5ce32`](https://github.com/meaninggraph/core/blob/dd5ce32c4554c0833c59925bbea1e7a7e5ed01e7/FORMAT.md)
+describes `meaning/draft-1`. A binding line of a meaning file says that a ModelSpec
+entity, or one property of it, holds a concept in a role. Two of the roles are
+`entity` ("the rows of the entity are instances of the concept") and `foreign-key`
+("the property references the entity whose rows are the concept's instances"). That
+page has no rule by which a reader works out a link that nobody wrote.
 
 **On record, the question.** It was put to the owner as card D6 of the ModelSpec
 conceptual design proposal (not published), in the proposal's first version. The card
@@ -101,11 +102,15 @@ ModelSpec's
 lists the phases and says of Phase 3 that it starts "On the owner's word, after Phase
 2."
 
-**On record, the words on which Phase 3 started.** Decision 0022 records them under 9
-October 2026. The owner's message: "Can you do other phases or do I need new session?
-You don't need to depend on DataTug lifecycle". Decision 0022 says that the session
-recording it "reads it as releasing Phase 2 and, after it, Phase 3". It also records a
-later message of his that day: "proceed".
+**On record, the words on which Phase 3 started.** Decision 0022 has this entry:
+
+> 2026-10-09 — The owner lifted the condition that the format change wait for the launch. His message: "Can you do other phases or do I need new session? You don't need to depend on DataTug lifecycle". The session recording this reads it as releasing Phase 2 and, after it, Phase 3. Phase 2 started the same day.
+
+**On record, the word "proceed".** A later entry of decision 0022, under the same
+date, is about another answer of his, on making the old spelling an error, and about
+the session's reading of that answer. That entry ends:
+
+> His next message was "proceed", which does not say whether the reading is right.
 
 **On record, the card, about the old role names:** "The old names stay until no
 registered graph uses them; removing them then needs its own approval."
@@ -228,8 +233,8 @@ answered "D6b: Rename both".
 
 Recorder's account, written on 9 October 2026.
 
-- This record changes no rule of the format. `FORMAT.md` gains one line that links
-  to the three decision records.
+- This record changes no rule of the format. `FORMAT.md` gains one short paragraph
+  that links to the three decision records.
 - No meaning file is edited by it, here or in any other repository.
 - The points listed under "Not decided by the owner" stay open or stay somebody
   else's choice, as each note says.

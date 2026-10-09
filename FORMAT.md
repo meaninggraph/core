@@ -11,7 +11,14 @@ A meaning file says what the data in a dataset means: concepts with labels per
 language, synonyms, a description, and bindings to ModelSpec entities and
 properties.
 
-Decisions about this format are recorded in [`spec/decisions/`](spec/decisions/README.md): [0001](spec/decisions/0001-derived-links-and-two-role-names.md) on derived links and two role names, [0002](spec/decisions/0002-kind-property-binding-key-field-and-the-format-identifier.md) on two renamed words and the format identifier, and [0003](spec/decisions/0003-value-sets.md) on value sets, none of which changes this page until the page itself is changed; the approval of draft 1 is recorded in `docs/proposals/meaning-file-format-draft-1.md` of the repository `sneat-co/meaninggraph`, under "Decisions (founder, 2026-10-03)" (not published).
+Decisions about this format are recorded in
+[`spec/decisions/`](spec/decisions/README.md):
+[0001](spec/decisions/0001-derived-links-and-two-role-names.md),
+[0002](spec/decisions/0002-kind-property-binding-key-field-and-the-format-identifier.md)
+and [0003](spec/decisions/0003-value-sets.md). A decision changes this page only
+when the page is changed to match it. The approval of draft 1 is recorded in the
+draft-1 format proposal in the repository `sneat-co/meaninggraph` (not
+published).
 
 ## Files and discovery
 
