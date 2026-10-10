@@ -462,7 +462,7 @@ function convertedCore() {
   }
   return dir;
 }
-test('X-12 and 6.3 point 1: the core graph converted by hand passes the check, and a draft-1 Chinook-shaped graph pinned to it is accepted with earlier-format', () => {
+test('X-12 and 6.3 point 1: the core graph converted by hand passes the check, and a made-up draft-1 graph of four concepts that extend and name its customer, country and currency (no model, no binding) is accepted with earlier-format', () => {
   const dir = convertedCore();
   const result = checkCore(dir);
   assert.deepEqual(result.problems, []);
@@ -471,14 +471,15 @@ test('X-12 and 6.3 point 1: the core graph converted by hand passes the check, a
   assert.equal(converted.concepts.get('country').concept.kind, 'value-set');
   assert.equal(converted.concepts.get('currency').concept.kind, 'value-set');
   const core = 'meaning://github.com/meaninggraph/core';
-  const chinook = file(d1, [
+  // made up for this case, the shape of a dataset's graph: four concepts, no model and no binding
+  const dataset = file(d1, [
     concept('customer-country', 'attribute', { of: 'customer', 'values-of': `${core}/country?ref=${pin}` }),
     concept('customer', 'entity', { extends: `${core}/customer?ref=${pin}` }),
     concept('invoice-total', 'attribute', { of: 'customer', 'units-of': `${core}/currency?ref=${pin}`, unit: 'USD' }),
     concept('country-region', 'entity', { extends: `${core}/country?ref=${pin}` }),
   ], { models: false });
-  const local = loadMeaningDir(directory({ 'chinook.meaning.yaml': chinook }), 'example.test/org/chinook');
-  const report = checkMeaningReport({ local, resolve: (repo, ref) => (repo === 'github.com/meaninggraph/core' && ref === pin ? converted : { error: 'no source' }), schemaPath, selfRepo: 'example.test/org/chinook' });
+  const local = loadMeaningDir(directory({ 'dataset.meaning.yaml': dataset }), 'example.test/org/dataset');
+  const report = checkMeaningReport({ local, resolve: (repo, ref) => (repo === 'github.com/meaninggraph/core' && ref === pin ? converted : { error: 'no source' }), schemaPath, selfRepo: 'example.test/org/dataset' });
   acceptWith(report, 'earlier-format');
 });
 
