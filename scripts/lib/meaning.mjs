@@ -494,14 +494,17 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
     const { path, doc } = file;
     const format = doc?.format;
     if (format === draft1) note('earlier-format', `${path}: earlier-format: the file is in ${draft1}, the earlier format; it is read in full`);
+    // A mapping with no format or an unknown one is refused with that one finding, whether or not a schema path is given,
+    // and nothing else in it is read (FORMAT.md, "Files and discovery"): its words belong to no format.
+    if (!isKnownFormat(format) && doc && typeof doc === 'object' && !Array.isArray(doc)) {
+      add('schema', `${path}: schema: ${formatError}`);
+      continue;
+    }
     if (schemaPath) {
       if (isKnownFormat(format)) {
         const schema = format === draft2 ? draft2SchemaPath(schemaPath) : schemaPath;
         if (format === draft2 && !existsSync(schema)) add('schema', `${path}: schema: ${format} needs ${schema}, which does not exist`);
         else for (const problem of schemaProblems(doc, schema)) add('schema', `${path}: schema: ${problem}`);
-      } else if (doc && typeof doc === 'object' && !Array.isArray(doc)) {
-        add('schema', `${path}: schema: ${formatError}`);
-        continue;
       } else for (const problem of schemaProblems(doc, schemaPath)) add('schema', `${path}: schema: ${problem}`);
     }
     if (isKnownFormat(format)) for (const { where, message } of formatWordFindings(doc, format)) add('format-word', `${path}: ${where}: format-word: ${message}`);

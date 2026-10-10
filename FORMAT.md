@@ -44,7 +44,10 @@ published).
 - Every file carries `format: meaning/draft-2` (or `meaning/draft-1`). The key's
   value decides, wherever the key stands in the file. A file with no `format`,
   or with another value, is an error: `format must be meaning/draft-1 or
-  meaning/draft-2`.
+  meaning/draft-2`. The reference checker reports that error alone for such a
+  file (rule `schema`, whether or not it is given a schema to validate with):
+  the words of a file with no known format belong to no format, so it reads
+  nothing else in the file and gives it no `earlier-format` notice.
 - **One graph, one format.** The files of one graph refer to each other by bare
   id, so they change format together. A graph whose files are in two formats is
   an error (`format-mixed`). Two graphs may differ: a graph in one format may

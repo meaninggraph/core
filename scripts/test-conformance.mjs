@@ -133,6 +133,25 @@ test('F-04: a file with no format is refused by the schema rule', () => {
   refuse(report, 'schema');
   assert.match(message(report.problems), /schema: format must be meaning\/draft-1 or meaning\/draft-2/);
 });
+test('F-03 and F-04, in full: a file with an unknown or no format gets the one schema finding and nothing else, with or without a schema path', () => {
+  // The same defects, each of which is reported when the format is known (the positive control below).
+  const defects = [concept('thing', 'entity', { extends: 'ghost', source: 'undeclared' })];
+  const control = run(file(d2, defects, { models: false }));
+  refuse(control, 'unknown-concept', 'undeclared-source');
+  for (const format of ['meaning/draft-3', undefined]) {
+    const doc = file(format, defects, { models: false });
+    if (format === undefined) delete doc.format;
+    const local = loadMeaningDir(directory({ 'shop.meaning.yaml': doc }), self);
+    const withSchema = checkMeaningReport({ local, resolve: () => ({ error: 'none' }), schemaPath, selfRepo: self });
+    const withoutSchema = checkMeaningReport({ local, resolve: () => ({ error: 'none' }), selfRepo: self });
+    for (const report of [withSchema, withoutSchema]) {
+      assert.equal(report.problems.length, 1, `${format}: ${message(report.problems)}`);
+      assert.equal(report.problems[0].rule, 'schema');
+      assert.match(message(report.problems), /shop.meaning.yaml: schema: format must be meaning\/draft-1 or meaning\/draft-2/);
+      assert.deepEqual(report.notices, [], 'a file that is not in meaning/draft-1 gets no earlier-format notice');
+    }
+  }
+});
 test('robustness: concepts that is a string or a set, in a draft-1 or a draft-2 file, is refused by the schema; the check does not throw', () => {
   for (const [name, text] of Object.entries({ string: 'concepts: nope\n', set: 'concepts: !!set {a, b}\n' })) {
     for (const format of [d1, d2]) {
