@@ -1,9 +1,10 @@
 name: Check meaning files
 
-# Validates every *.meaning.yaml in the repository root against
-# meaning.schema.json, then runs the cross-concept checks (references resolve,
-# extends joins compatible kinds, values-of and units-of name entities, ratios
-# are never summed, ids and values are unique) and the rules of this
+# Validates every *.meaning.yaml in the repository root against the schema of its
+# own format (meaning.schema.json for meaning/draft-1, meaning.draft-2.schema.json
+# for meaning/draft-2), then runs the cross-concept checks (references resolve,
+# extends joins compatible kinds, values-of and units-of name entities or value
+# sets, ratios are never summed, ids and values are unique) and the rules of this
 # repository (CC0-1.0 on every file, no bindings, no meaning file outside the
 # root, one word names one concept). scripts/check.mjs is the single entry point.
 
