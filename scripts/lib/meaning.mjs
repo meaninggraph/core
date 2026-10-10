@@ -680,7 +680,7 @@ export function valueCoverageReport({ local, resolve, data }) {
       if (!field || !valueRoles.includes(binding.role)) continue;
       const match = binding.match ?? 'labels';
       const entity = parseModelRef(binding.model)?.name;
-      const stored = new Set((data[entity] ?? []).map((row) => row[field]).filter((value) => value !== null && value !== undefined));
+      const stored = new Set((Object.hasOwn(data, entity) ? data[entity] ?? [] : []).map((row) => row[field]).filter((value) => value !== null && value !== undefined));
       for (const value of stored) {
         const matches = matchValues(values, value, match);
         if (matches.length === 1) {

@@ -699,6 +699,16 @@ test('S-09: a file whose format the check does not know is refused before any bi
   // The positive control: the same file in draft 2 reads its field: bindings and reports.
   assert.deepEqual(rules(stored(statusFile(), ['lost']).notices), ['unknown-value']);
 });
+test('S-10: rows are found by the record type name among the data\'s own keys: a record type named constructor with no rows has no stored values', () => {
+  const document = file(d2, [vs('v', { complete: true }), concept('p', 'property', { 'values-of': 'v', bindings: [{ model: 'modelspec:///shop.constructor', field: 'Status', role: 'value' }] })]);
+  const local = loadMeaningDir(directory({ 'shop.meaning.yaml': document }), self);
+  const resolve = () => ({ error: 'none' });
+  assert.deepEqual(valueCoverageReport({ local, resolve, data: {} }), { problems: [], notices: [] });
+  // the positive control: the same binding finds the rows of a record type that the data does have
+  const own = valueCoverageReport({ local, resolve, data: { constructor: [{ Status: 'zzz' }] } });
+  assert.equal(own.problems.length, 1);
+  assert.match(own.problems[0], /constructor.Status value "zzz" matches no value/);
+});
 
 // ---- the interface the registry uses, and what draft-1 keeps ------------------------------------------------------------------
 
