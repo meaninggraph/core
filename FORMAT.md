@@ -10,13 +10,21 @@ schema wins and this page has a bug. The reference checker is
 
 There are two formats, and a reader that knows both reads both:
 
-- `meaning/draft-2` (this page) is the current one: the kind `property`, the
+- `meaning/draft-2` (this page) is the newer one: the kind `property`, the
   binding key `field:`, the roles `instances` and `reference`, and the kind
   `value-set`.
 - `meaning/draft-1` is the earlier one, with its own schema,
   [`meaning.schema.json`](meaning.schema.json). [How draft 1 differs](#how-draft-1-differs)
   says exactly where. A reader reads it in full and reports one notice for each
   draft-1 file of the graph it checks, and none for a graph that is only pinned.
+
+At this commit only this repository's checker reads `meaning/draft-2`; no
+released reader does yet. At the time of writing (10 October 2026) the newest
+release of `meaninggraph/cli`, `v0.3.0`, validates against a schema whose
+`format` is the one value `meaning/draft-1` and expects a refusal for a file that
+says `meaning/draft-2`, and the registry still checks graphs with the checker of
+an earlier commit of this repository. Published graphs stay in `meaning/draft-1`
+until the readers are released.
 
 A meaning file says what the data in a dataset means: concepts with labels per
 language, synonyms, a description, and bindings to ModelSpec record types and
@@ -41,10 +49,17 @@ published).
 - All files of a repository are one set of concepts, which is one **graph** (the
   files one reader loads as one graph). A file is packaging: its name and `id`
   are not part of any concept's address.
-- Every file carries `format: meaning/draft-2` (or `meaning/draft-1`). The key's
-  value decides, wherever the key stands in the file. A file with no `format`,
+- Every file carries `format: meaning/draft-1` or `format: meaning/draft-2`. The
+  key's value decides, wherever the key stands in the file. A file with no `format`,
   or with another value, is an error: `format must be meaning/draft-1 or
-  meaning/draft-2`.
+  meaning/draft-2`. For such a file that is a YAML mapping the reference checker
+  reports that error (rule `schema`, whether or not it is given a schema to
+  validate with) and applies no other rule to the file: the words of a file with
+  no known format belong to no format, and it gets no `earlier-format` notice.
+  Its concept ids stay in the graph's index, so an id declared twice is still
+  reported and another file's reference to one of them still resolves. A file
+  that is not a mapping (an empty file, a list) is refused by the schema instead
+  (`/ must be object`), and only when the checker is given one.
 - **One graph, one format.** The files of one graph refer to each other by bare
   id, so they change format together. A graph whose files are in two formats is
   an error (`format-mixed`). Two graphs may differ: a graph in one format may
@@ -379,14 +394,16 @@ looks at more than one concept:
 | `role: foreign-key` (either format) | `reference` |
 
 After that one set of rules serves both formats. A graph that is draft-1
-throughout is accepted or refused as it was before draft 2, the two new role
-names aside, with one exception: the reference checker does not validate a graph
-it merely resolves (below), so a concept of kind `value-set` or `property` in
-such a graph is taken as that kind, though every format line says draft-1. In a
-draft-1 file that names it, these are then no longer problems: `of`, `values-of`
-or `units-of` naming the value set; an entity that extends the value set; an
-attribute or a dimension that extends the property; and a measure that names the
-property in `inputs` or `dimensions`.
+throughout is accepted or refused as it was before draft 2, with two things
+aside: the two new role names, and a model that writes a record type's `key` as
+anything but a list. Such a key is read as no key, so an `identifier` binding on
+that record type is a problem, where `key = "Id"` used to let it pass. The
+reference checker does not validate a graph it merely resolves (below), so it
+reads the kinds `value-set` and `property` only from a file that says
+`meaning/draft-2`: in any other file (one that says `meaning/draft-1`, another
+value or nothing) they are no kind it knows, and a graph of either format that
+names such a concept (with `of`, `values-of`, `units-of`, `extends`, `inputs` or
+`dimensions`) is refused, a draft-1 graph as it was before draft 2.
 
 When a graph of one format pins a graph of the other, the single vocabulary
 means: `extends` between an `attribute` in one and a `property` or a `dimension`
