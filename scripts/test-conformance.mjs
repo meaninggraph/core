@@ -1,12 +1,17 @@
 // The conformance cases of the meaning/draft-2 contract (sections 4.2, 4.3, 5.6 and 7), run against the reference
-// checker. A test is named by its case id (F format and words, R roles, K kinds, V value sets, X graphs of
-// different formats, D derived links, S stored values). An accepted case asserts that there is no problem and which
+// checker. That contract is not published: its section numbers (4.2, 6.3) and the point numbers in the titles of the tests,
+// such as (N7), cannot be looked up in this repository. The format is what FORMAT.md, the two schemas beside it and the
+// decision records in spec/decisions/ say. A test is named by its case id (F format and words, R roles, K kinds, V value
+// sets, X graphs of different formats, D derived links, S stored values). An accepted case asserts that there is no problem and which
 // notices there are; a refused case asserts that the rules it names are among the rules of its problems and does
 // not look at its notices, except a refused S case (S-03, S-05, S-06, S-09), whose problems carry no rule: it
 // asserts the number and the text of its problems, and S-03, S-06 and S-09 assert that there is no notice; a D case
 // asserts the link list (the whole list in most; D-13 compares the links of one concept and field; D-14 and D-19
-// assert that there is none). A few tests are not cases of the contract: one for the interface, one for 4.2, one for effectiveValues,
-// one for a concepts that is no list, and V-20 to V-30 for the draft-1 originals of the twins. CC0-1.0.
+// assert that there is none). A few tests are not cases of the contract: the ones for the interface, one for 4.2,
+// one for effectiveValues, one for a concepts that is no list, one for format-word, one for the words of the messages
+// about a draft-1 file, the full F-03 and F-04 test, and V-20 to V-30 for the draft-1 originals of the twins. D-21 to
+// D-24, S-10 and X-13 are not cases of the contract either: they were added with the follow-ups of
+// meaninggraph/core#9 and are numbered after the cases of their group in this file. CC0-1.0.
 //
 // The Node checker has no severities: the four notices of the contract (earlier-format, earlier-role-name,
 // unknown-value, retired-value) are its separate channel, and "Accept" means no problem and none of the four.
