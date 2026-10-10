@@ -1,7 +1,8 @@
 // The conformance cases of the meaning/draft-2 contract (sections 4.2, 4.3, 5.6 and 7), run against the reference
-// checker. That contract is not published: its section numbers (4.2, 6.3) and the point numbers in the titles of the tests,
-// such as (N7), cannot be looked up in this repository. The format is what FORMAT.md, the two schemas beside it and the
-// decision records in spec/decisions/ say. A test is named by its case id (F format and words, R roles, K kinds, V value
+// checker. That contract is not published: its section numbers (4.2, 6.3) cannot be looked up in this repository. The
+// point numbers in the titles of the tests, such as (N7), are the contract's as well; the decision records in
+// spec/decisions/ list each of them by number. The format is what FORMAT.md and the two schemas beside it say; a decision
+// record does not change it. A test is named by its case id (F format and words, R roles, K kinds, V value
 // sets, X graphs of different formats, D derived links, S stored values). An accepted case asserts that there is no problem and which
 // notices there are; a refused case asserts that the rules it names are among the rules of its problems and does
 // not look at its notices, except a refused S case (S-03, S-05, S-06, S-09), whose problems carry no rule: it
