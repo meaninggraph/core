@@ -383,13 +383,12 @@ looks at more than one concept:
 
 After that one set of rules serves both formats. A graph that is draft-1
 throughout is accepted or refused as it was before draft 2, the two new role
-names aside, with one exception: the reference checker does not validate a graph
-it merely resolves (below), so a concept of kind `value-set` or `property` in
-such a graph is taken as that kind, though every format line says draft-1. In a
-draft-1 file that names it, these are then no longer problems: `of`, `values-of`
-or `units-of` naming the value set; an entity that extends the value set; an
-attribute or a dimension that extends the property; and a measure that names the
-property in `inputs` or `dimensions`.
+names aside. The reference checker does not validate a graph it merely resolves
+(below), so it reads the kinds `value-set` and `property` only from a file that
+says `meaning/draft-2`: in a file that says `meaning/draft-1`, or says nothing,
+they are no kind it knows, and a draft-1 graph that names such a concept (with
+`of`, `values-of`, `units-of`, `extends`, `inputs` or `dimensions`) is refused as
+it was before draft 2.
 
 When a graph of one format pins a graph of the other, the single vocabulary
 means: `extends` between an `attribute` in one and a `property` or a `dimension`

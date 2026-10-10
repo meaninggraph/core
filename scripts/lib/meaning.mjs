@@ -237,7 +237,17 @@ function loadModels(file, doc) {
 const knownFormats = [draft1, draft2];
 export const isKnownFormat = (format) => knownFormats.includes(format);
 const formatError = 'format must be meaning/draft-1 or meaning/draft-2';
-const kindOf = (concept) => (concept?.kind === 'attribute' ? 'property' : concept?.kind);
+// The format of the file that holds a concept of `repo`, or undefined.
+const formatOf = (concept, repo) => repo?.concepts?.get(concept.id)?.doc?.format;
+// A concept's kind in the current words, given the format of its file. The kinds property and value-set are read only in
+// a file that says meaning/draft-2: in any other file (the checker does not validate a graph it merely resolves) they
+// are no kind this check knows, as before draft 2, and the concept matches no rule below.
+function kindOf(concept, format) {
+  if (concept?.kind === 'attribute') return 'property';
+  if ((concept?.kind === 'property' || concept?.kind === 'value-set') && format !== draft2) return undefined;
+  return concept?.kind;
+}
+const kindIn = ({ concept, repo }) => kindOf(concept, formatOf(concept, repo));
 function roleOf(binding) {
   switch (binding?.role) {
     case 'entity': return 'instances';
@@ -247,7 +257,7 @@ function roleOf(binding) {
 }
 // The binding's field under the key its file's format uses, else under the other (a file the schema refuses).
 const fieldOf = (binding, format) => (format === draft2 ? binding.field ?? binding.property : binding.property ?? binding.field);
-const isEntityLike = (concept) => ['entity', 'value-set'].includes(kindOf(concept));
+const isEntityLike = (found) => ['entity', 'value-set'].includes(kindIn(found));
 
 // extends means "is a kind of", so it joins concepts of compatible kinds only: a concept's kind -> the kinds it may
 // extend, in the current words. A property and a dimension are both a property of an entity (a dimension is one
@@ -344,7 +354,6 @@ export const effectiveValues = (concept, local, resolve) => knownValues(concept,
 
 // A list is open when it is a value set that does not say `complete: true` (draft 2). A list in a draft-1 file has
 // no marker and is read as complete, as every reader has always read it.
-const formatOf = (concept, repo) => repo?.concepts?.get(concept.id)?.doc?.format;
 const isComplete = ({ concept, repo }) => formatOf(concept, repo) !== draft2 || concept.complete === true;
 
 // The known values that a stored value names. `match` is labels (labels and
@@ -529,12 +538,12 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
       const entityLike = format === draft2 ? 'an entity or a value-set' : 'an entity';
       if (concept.of) {
         const owner = lookup(concept.of, `${where} of`);
-        if (owner && !isEntityLike(owner.concept)) add('target-kind', `${where}: of names ${concept.of}, which is ${an(owner.concept.kind)}, not ${entityLike}`);
+        if (owner && !isEntityLike(owner)) add('target-kind', `${where}: of names ${concept.of}, which is ${an(owner.concept.kind)}, not ${entityLike}`);
       }
       if (concept.extends) {
         const parent = lookup(concept.extends, `${where} extends`);
-        const allowed = Object.hasOwn(extendsKinds, kindOf(concept)) ? extendsKinds[kindOf(concept)] : [];
-        if (parent && !allowed.includes(kindOf(parent.concept))) add('extends-kind', `${where}: ${an(concept.kind)} cannot extend ${concept.extends}, which is ${an(parent.concept.kind)}; extends means "is a kind of", and ${an(concept.kind)} may extend only ${wordsOf(allowed, format).join(' or ')}`);
+        const allowed = Object.hasOwn(extendsKinds, kindOf(concept, format)) ? extendsKinds[kindOf(concept, format)] : [];
+        if (parent && !allowed.includes(kindIn(parent))) add('extends-kind', `${where}: ${an(concept.kind)} cannot extend ${concept.extends}, which is ${an(parent.concept.kind)}; extends means "is a kind of", and ${an(concept.kind)} may extend only ${wordsOf(allowed, format).join(' or ')}`);
         // The chain of extends, through any repository, comes back to a concept it has passed.
         const seen = [concept];
         for (let node = resolveConcept(concept.extends, local, resolve); node; node = resolveConcept(node.concept.extends, node.repo, resolve)) {
@@ -545,7 +554,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
       for (const key of ['values-of', 'units-of']) {
         if (!concept[key]) continue;
         const target = lookup(concept[key], `${where} ${key}`);
-        if (target && !isEntityLike(target.concept)) add('target-kind', `${where}: ${key} names ${concept[key]}, which is ${an(target.concept.kind)}, not ${entityLike}`);
+        if (target && !isEntityLike(target)) add('target-kind', `${where}: ${key} names ${concept[key]}, which is ${an(target.concept.kind)}, not ${entityLike}`);
       }
       // A kind of an attribute whose values are instances of X holds instances
       // of X, or of a kind of X; a kind of an amount in units that are instances
@@ -574,11 +583,11 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
       const dimensionsWord = format === draft2 ? 'dimensions or properties' : 'dimensions or attributes';
       for (const ref of concept.measure?.inputs ?? []) {
         const input = lookup(ref, `${where} measure.inputs`);
-        if (input && !measureInputs.includes(kindOf(input.concept))) add('measure-input', `${where}: measure.inputs names ${ref}, which is ${an(input.concept.kind)}; a measure is computed from ${inputsWord} only`);
+        if (input && !measureInputs.includes(kindIn(input))) add('measure-input', `${where}: measure.inputs names ${ref}, which is ${an(input.concept.kind)}; a measure is computed from ${inputsWord} only`);
       }
       for (const ref of concept.measure?.dimensions ?? []) {
         const dimension = lookup(ref, `${where} measure.dimensions`);
-        if (dimension && !measureDimensions.includes(kindOf(dimension.concept))) add('measure-dimension', `${where}: measure.dimensions names ${ref}, which is ${an(dimension.concept.kind)}; a measure is grouped by ${dimensionsWord} only`);
+        if (dimension && !measureDimensions.includes(kindIn(dimension))) add('measure-dimension', `${where}: measure.dimensions names ${ref}, which is ${an(dimension.concept.kind)}; a measure is grouped by ${dimensionsWord} only`);
       }
       // A kind of a measure inherits its aggregation, so a ratio that extends a measure which sums is wrong too.
       const { aggregation, from } = concept.kind === 'measure' ? effectiveAggregation(concept, local, resolve) : {};
@@ -632,7 +641,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
           // The reference must point at the entity whose rows are the instances:
           // this concept's own (an entity) or those of its values-of entity.
           let target = null;
-          if (kindOf(concept) === 'entity') target = { concept, repo: local };
+          if (kindOf(concept, format) === 'entity') target = { concept, repo: local };
           else {
             const domain = inherited(concept, local, 'values-of', resolve);
             if (!domain) { add('binding-role', `${at} has role ${binding.role}, so ${concept.id} needs values-of: the entity its references point at`); continue; }

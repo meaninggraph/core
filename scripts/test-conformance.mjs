@@ -410,6 +410,30 @@ test('X-11: a draft-2 graph referring into a graph of two files, one draft-1 and
   const supplied = { files: { 'a.meaning.yaml': file(d1, [concept('one', 'attribute')], { models: false }), 'b.meaning.yaml': file(d2, [concept('two', 'property')], { models: false }) } };
   accept(run(file(d2, [concept('p', 'property', { extends: other('one') })], { models: false }), { supplied }));
 });
+// The Node checker does not validate a graph it resolves, but it reads the kinds value-set and property only from a file
+// that says meaning/draft-2: in a pinned file that says draft 1, or says nothing, they are no kind it knows, and the
+// draft-1 graph that names them is refused as it was before draft 2.
+test('X-13: a pinned file that says meaning/draft-1 or has no format is not read as holding a value set or a property', () => {
+  const asks = [
+    ['values-of', 'target-kind', (name) => concept('a', 'attribute', { 'values-of': other(name) }), 'status-list'],
+    ['of', 'target-kind', (name) => concept('a', 'attribute', { of: other(name) }), 'status-list'],
+    ['units-of', 'target-kind', (name) => concept('a', 'attribute', { 'units-of': other(name) }), 'status-list'],
+    ['an entity extends a value set', 'extends-kind', (name) => concept('e', 'entity', { extends: other(name) }), 'status-list'],
+    ['an attribute extends a property', 'extends-kind', (name) => concept('a', 'attribute', { extends: other(name) }), 'some-property'],
+    ['a measure takes a property as input', 'measure-input', (name) => measure('m', {}, { inputs: [other(name)] }), 'some-property'],
+    ['a measure is grouped by a property', 'measure-dimension', (name) => measure('m', {}, { dimensions: [other(name)] }), 'some-property'],
+  ];
+  const pinned = (format) => {
+    const supplied = suppliedD2();
+    if (format === undefined) delete supplied.format; else supplied.format = format;
+    return supplied;
+  };
+  for (const [name, rule, build, target] of asks) {
+    // the positive control: a file that says meaning/draft-2 holds the kind, and the same line is accepted
+    acceptWith(checked1([build(target)]), 'earlier-format');
+    for (const format of [d1, undefined]) refuse(checked1([build(target)], pinned(format)), rule);
+  }
+});
 
 // The core graph of this repository, converted by hand the way stage F will convert it (all six files to draft-2, the
 // attributes to properties, the two lists to value sets), is what X-12 and section 6.3, point 1 need.
