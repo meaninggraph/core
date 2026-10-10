@@ -495,15 +495,19 @@ About the work as a whole:
 
 Recorder's account. His answers quoted above, "D14a yes, D14b yes" and, on 9 October
 2026, "5 - ok" and "2 - correct", were not approval of this text, which was written
-afterwards. The text was put to him separately, at a named commit, and the status
-stayed In Review until he answered.
+afterwards. The text was put to him separately, and the status stayed In Review until
+he answered.
 
-**On record, what was put to him** (the stored record of the coordinating session's
-conversation with him, not published). On 2026-10-10 at 04:14:26 UTC that session's
-message to him had a section "Needed from you" with three numbered items. The third
-read, exactly:
+**On record, what was put to him** (the stored record of the lead's conversation with
+him, not published). On 2026-10-10 at 04:14:26 UTC the lead's message to him had a
+section "Needed from you" with three numbered items. The third read, exactly:
 
 > 3. **Four decision texts to approve:** MeaningGraph records 0002, 0001 and 0003 on `meaninggraph/core` `main`, and OpenVaultDB decision 0012 on `openvaultdb/openvaultdb` `main` at `385ca56`.
+
+**On record, in the same stored record.** For the three records of this repository
+that item names the branch and no commit. An earlier message of the lead's, on
+2026-10-09 at 22:11:22 UTC, had given him a link to each of the three files at commit
+`d412889be157a56715b83c345b619018158527ef`.
 
 **The owner's words**, 2026-10-10 at 05:30:31 UTC, the third line of one message of
 three lines that answers the three items by number (its other two lines answer items
@@ -514,12 +518,12 @@ three lines that answers the three items by number (its other two lines answer i
 Recorder's account. What he approved is this file as it stood on `main` of
 `meaninggraph/core` at commit `e57f57e786047745ba5f2b735d9e2fd3516c2b69`, the tip of
 `main` when he answered. The three records of this repository, 0001, 0002 and 0003,
-were added to `main` by commit `d412889be157a56715b83c345b619018158527ef` and are
-unchanged since. His answer approves this text as it stood there. As the section "Not
-decided by the owner" says, approving this record approves none of the points it
-lists, and his answer is not an answer to any of them. The commit that records his
-approval changes the status, adds this section and changes this record's row in the
-index; it changes nothing else in this file.
+were added to `main` by commit `d412889be157a56715b83c345b619018158527ef` and were
+not changed between that commit and his answer. His answer approves this text as it
+stood there. As the section "Not decided by the owner" says, approving this record
+approves none of the points it lists, and his answer is not an answer to any of them.
+The commit that records his approval changes the status, adds this section and
+changes this record's row in the index; it changes nothing else in this file.
 
 ## Rationale
 
