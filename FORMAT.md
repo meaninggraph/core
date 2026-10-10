@@ -10,13 +10,21 @@ schema wins and this page has a bug. The reference checker is
 
 There are two formats, and a reader that knows both reads both:
 
-- `meaning/draft-2` (this page) is the current one: the kind `property`, the
+- `meaning/draft-2` (this page) is the newer one: the kind `property`, the
   binding key `field:`, the roles `instances` and `reference`, and the kind
   `value-set`.
 - `meaning/draft-1` is the earlier one, with its own schema,
   [`meaning.schema.json`](meaning.schema.json). [How draft 1 differs](#how-draft-1-differs)
   says exactly where. A reader reads it in full and reports one notice for each
   draft-1 file of the graph it checks, and none for a graph that is only pinned.
+
+At this commit only this repository's checker reads `meaning/draft-2`; no
+released reader does yet. At the time of writing (10 October 2026) the newest
+release of `meaninggraph/cli`, `v0.3.0`, validates against a schema whose
+`format` is the one value `meaning/draft-1` and expects a refusal for a file that
+says `meaning/draft-2`, and the registry still checks graphs with the checker of
+an earlier commit of this repository. Published graphs stay in `meaning/draft-1`
+until the readers are released.
 
 A meaning file says what the data in a dataset means: concepts with labels per
 language, synonyms, a description, and bindings to ModelSpec record types and
@@ -41,8 +49,8 @@ published).
 - All files of a repository are one set of concepts, which is one **graph** (the
   files one reader loads as one graph). A file is packaging: its name and `id`
   are not part of any concept's address.
-- Every file carries `format: meaning/draft-2` (or `meaning/draft-1`). The key's
-  value decides, wherever the key stands in the file. A file with no `format`,
+- Every file carries `format: meaning/draft-1` or `format: meaning/draft-2`. The
+  key's value decides, wherever the key stands in the file. A file with no `format`,
   or with another value, is an error: `format must be meaning/draft-1 or
   meaning/draft-2`. The reference checker reports that error alone for such a
   file (rule `schema`, whether or not it is given a schema to validate with):

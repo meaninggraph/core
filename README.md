@@ -2,11 +2,13 @@
 
 Concepts that are not specific to any dataset, in the meaning-file format
 `meaning/draft-1`. [`FORMAT.md`](FORMAT.md) is the format reference: it describes
-the current format, `meaning/draft-2` (JSON Schema:
+the newer format, `meaning/draft-2` (JSON Schema:
 [`meaning.draft-2.schema.json`](meaning.draft-2.schema.json)), and says exactly
 how the earlier `meaning/draft-1` (JSON Schema:
-[`meaning.schema.json`](meaning.schema.json)) differs. The files here are still
-in `meaning/draft-1`. A dataset's
+[`meaning.schema.json`](meaning.schema.json)) differs. Only this repository's
+checker reads `meaning/draft-2` so far; no released reader does yet, so the files
+here are still in `meaning/draft-1` and published graphs stay in it until the
+readers are released. A dataset's
 meaning file reuses these concepts by address, for example
 `meaning://github.com/meaninggraph/core/country?ref=<commit>`, and binds its own
 columns to them.
