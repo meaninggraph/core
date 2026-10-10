@@ -390,6 +390,9 @@ function formatWordFindings(doc, format) {
   return found;
 }
 
+// A record type's key as a list. A model that gives it as anything else (key = 5, key = "Id") has no key to read.
+const keyOf = (record) => (Array.isArray(record?.key) ? record.key : []);
+
 // ---- derived links ----------------------------------------------------------------------------------------------
 // FORMAT.md, "Derived links". `files` is [{ doc, models }]: a parsed meaning file and its models (module short name ->
 // the model as toModelspecJson returns it). The result is the written and the derived links of the graph, sorted.
@@ -431,7 +434,7 @@ export function deriveLinks(files) {
     }
     if (Object.hasOwn(records, record)) {
       const fields = records[record][words.fields] ?? {};
-      for (const key of records[record].key ?? []) if (Object.hasOwn(fields, key)) derived(concept, module, record, key, 'identifier');
+      for (const key of keyOf(records[record])) if (Object.hasOwn(fields, key)) derived(concept, module, record, key, 'identifier');
     }
   }
   return [...links.values()].sort((a, b) => compareBytes(a.concept, b.concept) || compareBytes(a.model, b.model) || compareBytes(a.field ?? '', b.field ?? '') || (a.field === undefined ? 0 : 1) - (b.field === undefined ? 0 : 1) || compareBytes(a.role, b.role));
@@ -621,7 +624,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
           if (entities.length === 0) add('binding-role', `${at} has role ${binding.role}, but ${concept.id} has no entity binding, so it cannot be checked which entity the property must sit on`);
           else if (entities.length === 1 && !sameEntity(entities[0], parsed)) add('binding-role', `${at} has role ${binding.role}, but ${concept.id} is bound to the entity ${entities[0].name}; the property must be on that entity`);
         }
-        if (binding.role === 'identifier' && !(entity.key ?? []).includes(field)) add('binding-role', `${at} has role identifier but is not in the key of ${parsed.name} [${(entity.key ?? []).join(', ')}]`);
+        if (binding.role === 'identifier' && !keyOf(entity).includes(field)) add('binding-role', `${at} has role identifier but is not in the key of ${parsed.name} [${keyOf(entity).join(', ')}]`);
         if (binding.role === 'display-name' && member.type !== 'string') add('binding-role', `${at} has role display-name but is ${reference ? `a reference to ${reference}` : an(member.type)}, not a string`);
         if (binding.role === 'value' && reference) add('binding-role', `${at} has role value but is a reference to ${reference}; bind it with role reference`);
         if (roleOf(binding) === 'reference') {

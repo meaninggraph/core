@@ -609,6 +609,18 @@ test('D-20: a key that names a field the record type does not declare derives no
   accept(report);
   assert.deepEqual(report.links, baseLinks);
 });
+test('D-21: a key that is not a list gives no key: nothing is derived from it, and a written identifier line on it is a binding-role problem', () => {
+  // key = 5 threw a TypeError, and key = "Id" was read letter by letter (here the field I would have been the key)
+  for (const key of ['5', '"Id"']) {
+    const hcl = hclWith((text) => text.replace('record "Customer" {\n  key = ["Id"]', `record "Customer" {\n  key = ${key}`).replace('  field "Name" {', '  field "I" {\n    type = "int"\n  }\n  field "Name" {'));
+    const report = links(file(d2, base(d2)), { hcl });
+    accept(report);
+    assert.deepEqual(report.links, baseLinks.filter((entry) => !(entry.concept === 'customer' && entry.role === 'identifier')), `key = ${key}`);
+    const named = links(file(d2, base(d2, [], { customer: [bind(d2, 'Customer', 'Id', 'identifier')] })), { hcl });
+    refuse(named, 'binding-role');
+    assert.match(message(named.problems), /Customer.Id has role identifier but is not in the key of Customer \[\]/, `key = ${key}`);
+  }
+});
 
 // ---- S: stored values (section 5.6) ---------------------------------------------------------------------------------------
 
