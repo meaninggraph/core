@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { after, test } from 'node:test';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { checkCore, root } from './check.mjs';
-import { checkMeaning, checkMeaningReport, effectiveValues, indexConcepts, loadMeaningDir, pinsOf, valueCoverageProblems, valueCoverageReport, checkoutGit } from './lib/meaning.mjs';
+import { checkMeaning, checkMeaningReport, effectiveValues, extendsCompatibility, indexConcepts, measureDimensionKinds, measureInputKinds, loadMeaningDir, pinsOf, valueCoverageProblems, valueCoverageReport, checkoutGit } from './lib/meaning.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'meaning-conformance-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
@@ -188,6 +188,20 @@ wordRefused('F-13', 'a draft-2 binding with both property: and field:', file(d2,
 wordRefused('F-14', 'a draft-1 binding with both property: and field:', file(d1, [concept('customer', 'entity', { bindings: [{ model: 'modelspec:///shop.Customer', property: 'Id', field: 'Id', role: 'identifier' }] })]), /both property: and field:; meaning\/draft-1 writes property/);
 wordRefused('F-15', 'a draft-2 file with values on an entity', file(d2, [concept('e', 'entity', { values: values('a') })], { models: false }), /values belongs on a concept of kind value-set; name that concept with values-of/);
 wordRefused('F-16', 'a draft-2 file with values on a property', file(d2, [concept('p', 'property', { values: values('a') })], { models: false }), /values belongs on a concept of kind value-set; name that concept with values-of/);
+test('F-06 to F-16, everywhere: format-word looks at every concept, binding and value of the file, not at the first', () => {
+  const words = (document) => run(document).problems.filter((found) => found.rule === 'format-word').map((found) => found.message);
+  const inDraft1 = words(file(d1, [concept('fine', 'entity'), concept('p', 'property'), concept('v', 'value-set', { values: values('a') }), concept('c', 'entity', { values: [...values('a'), { ...values('b')[0], retired: true }] })], { models: false }));
+  assert.equal(inDraft1.filter((text) => /concept p: format-word: kind property belongs/.test(text)).length, 1, inDraft1.join('\n'));
+  assert.equal(inDraft1.filter((text) => /concept v: format-word: kind value-set belongs/.test(text)).length, 1, inDraft1.join('\n'));
+  assert.equal(inDraft1.filter((text) => /concept c: value b: format-word: retired belongs/.test(text)).length, 1, inDraft1.join('\n'));
+  const bindings = words(file(d1, [concept('customer', 'entity', { bindings: [bind(d1, 'Customer', null, 'instances'), { model: 'modelspec:///shop.Customer', field: 'Id', role: 'identifier' }] })]));
+  assert.equal(bindings.length, 1, bindings.join('\n'));
+  assert.match(bindings[0], /concept customer: binding modelspec:\/\/\/shop.Customer: format-word: the binding key field belongs to meaning\/draft-2/);
+  const d2Words = words(file(d2, [concept('fine', 'entity'), concept('a', 'attribute'), concept('customer', 'entity', { bindings: [bind(d2, 'Customer', null, 'instances'), { model: 'modelspec:///shop.Customer', property: 'Id', role: 'identifier' }] })]));
+  assert.equal(d2Words.length, 2, d2Words.join('\n'));
+  assert.match(d2Words.join('\n'), /concept a: format-word: kind attribute is written property/);
+  assert.match(d2Words.join('\n'), /binding modelspec:\/\/\/shop.Customer: format-word: the binding key property is written field/);
+});
 test('F-17: a draft-1 attribute that carries values and no values-of is accepted with the notice earlier-format', () => {
   acceptWith(run(file(d1, [concept('a', 'attribute', { values: values('a', 'b') }), concept('d', 'dimension', { values: values('x') })], { models: false })), 'earlier-format');
 });
@@ -645,6 +659,52 @@ test('D-21: a key that is not a list gives no key: nothing is derived from it, a
     assert.match(message(named.problems), /Customer.Id has role identifier but is not in the key of Customer \[\]/, `key = ${key}`);
   }
 });
+test('D-22: a written line keeps its match as well as its note', () => {
+  const status = concept('status', 'property', { bindings: [bind(d2, 'Order', 'Status', 'value', { match: 'codes.k', note: 'By code.' })] });
+  const report = links(file(d2, base(d2, [status])));
+  accept(report);
+  assert.deepEqual(report.links.filter((entry) => entry.concept === 'status'), [link('status', 'Order', 'Status', 'value', { match: 'codes.k', note: 'By code.' })]);
+});
+test('D-23: a model in the earlier ModelSpec spelling gives the same list', () => {
+  const earlier = shopHcl.replaceAll('record = "', 'entity = "').replaceAll('record "', 'entity "').replaceAll('field "', 'property "');
+  assert.doesNotMatch(earlier, /record|field/);
+  const report = links(file(d2, base(d2)), { hcl: earlier });
+  accept(report);
+  assert.deepEqual(report.links, baseLinks);
+});
+test('D-24: the list is sorted by bytes, not by locale (capital letters first)', () => {
+  const hcl = `record "Customer" {
+  key = ["alpha", "Zeta"]
+  field "alpha" {
+    type = "int"
+  }
+  field "Zeta" {
+    type = "int"
+  }
+}
+
+record "Zed" {
+  field "CustomerId" {
+    record = "Customer"
+  }
+}
+
+record "alpha" {
+  field "CustomerId" {
+    record = "Customer"
+  }
+}
+`;
+  const report = links(file(d2, [concept('customer', 'entity', { bindings: [bind(d2, 'Customer', null, 'instances')] })]), { hcl });
+  accept(report);
+  assert.deepEqual(report.links, [
+    link('customer', 'Customer', null, 'instances'),
+    derived('customer', 'Customer', 'Zeta', 'identifier'),
+    derived('customer', 'Customer', 'alpha', 'identifier'),
+    derived('customer', 'Zed', 'CustomerId', 'reference'),
+    derived('customer', 'alpha', 'CustomerId', 'reference'),
+  ]);
+});
 
 // ---- S: stored values (section 5.6) ---------------------------------------------------------------------------------------
 
@@ -754,6 +814,74 @@ test('interface: the four functions meaninggraph/registry uses keep their shapes
   assert.ok(refused.some((problem) => /^.*shop\.meaning\.yaml: schema: \/concepts\/0\/kind must be equal to one of the allowed values/.test(problem)), refused.join('\n'));
   // a list of strings is still what valueCoverageProblems returns
   assert.ok(Array.isArray(valueCoverageProblems({ local: loadMeaningDir(directory({ 'shop.meaning.yaml': statusFile() }), self), resolve, data: { Order: [{ Status: 'lost' }] } })));
+});
+
+test('interface: the exported tables are in draft-1 words, as they were before draft 2', () => {
+  assert.deepEqual(extendsCompatibility, { entity: ['entity'], attribute: ['attribute', 'dimension'], dimension: ['dimension', 'attribute'], measure: ['measure'] });
+  assert.deepEqual(measureInputKinds, ['attribute', 'measure']);
+  assert.deepEqual(measureDimensionKinds, ['dimension', 'attribute']);
+});
+test('interface: valueCoverageProblems returns the problems only, and hands the notices to the notice channel', () => {
+  const local = loadMeaningDir(directory({ 'shop.meaning.yaml': statusFile() }), self);
+  const resolve = () => ({ error: 'none' });
+  const data = { Order: [{ Status: 'lost' }, { Status: 'on hold' }] };
+  const seen = [];
+  assert.deepEqual(valueCoverageProblems({ local, resolve, data, notice: (text, rule) => seen.push({ rule, text }) }), []);
+  assert.deepEqual(seen.map((found) => found.rule).sort(), ['retired-value', 'unknown-value']);
+  assert.ok(seen.every((found) => typeof found.text === 'string'));
+  assert.deepEqual(valueCoverageProblems({ local, resolve, data }), [], 'no notice channel given: the same list');
+  const complete = loadMeaningDir(directory({ 'shop.meaning.yaml': statusFile({ complete: true }) }), self);
+  const problems = valueCoverageProblems({ local: complete, resolve, data });
+  assert.equal(problems.length, 1);
+  assert.equal(typeof problems[0], 'string');
+});
+test('interface: checkMeaningReport lists no links unless derive: true is passed', () => {
+  const local = loadMeaningDir(directory({ 'shop.meaning.yaml': file(d2, base(d2)) }), self);
+  const resolve = () => ({ error: 'none' });
+  assert.equal(checkMeaningReport({ local, resolve, schemaPath, selfRepo: self }).links, null);
+  assert.equal(checkMeaningReport({ local, resolve, schemaPath, selfRepo: self, derive: false }).links, null);
+  assert.deepEqual(checkMeaningReport({ local, resolve, schemaPath, selfRepo: self, derive: true }).links, baseLinks);
+});
+test('interface: a graph that cannot be read is reported under the rule unresolved-graph, with the resolver\'s own words', () => {
+  const local = loadMeaningDir(directory({ 'shop.meaning.yaml': file(d1, [concept('a', 'attribute', { extends: other('x') })], { models: false }) }), self);
+  const report = checkMeaningReport({ local, resolve: () => ({ error: 'no source for the other graph' }), schemaPath, selfRepo: self });
+  assert.deepEqual(rules(report.problems), ['unresolved-graph']);
+  assert.match(message(report.problems), /shop.meaning.yaml: concept a extends: no source for the other graph$/);
+});
+test('interface: the draft-2 schema is the file beside the schema given, not one in the working directory', () => {
+  const copyOf = (...names) => {
+    const dir = mkdtempSync(join(scratch, 'schemas-'));
+    for (const name of names) copyFileSync(join(root, name), join(dir, name));
+    return dir;
+  };
+  const alone = copyOf('meaning.schema.json');
+  const both = copyOf('meaning.schema.json', 'meaning.draft-2.schema.json');
+  const local = loadMeaningDir(directory({ 'shop.meaning.yaml': file(d2, [concept('thing', 'entity')], { models: false }) }), self);
+  const check = (dir) => checkMeaningReport({ local, resolve: () => ({ error: 'none' }), schemaPath: join(dir, 'meaning.schema.json'), selfRepo: self });
+  const before = process.cwd();
+  try {
+    process.chdir(root); // a draft-2 schema is here, and not beside the schema given
+    const missing = check(alone);
+    refuse(missing, 'schema');
+    assert.match(message(missing.problems), /shop.meaning.yaml: schema: meaning\/draft-2 needs .*meaning\.draft-2\.schema\.json, which does not exist/);
+    assert.ok(message(missing.problems).includes(alone));
+    process.chdir(alone); // none here, and one beside the schema given
+    accept(check(both));
+  } finally { process.chdir(before); }
+});
+test('a draft-1 file is told in draft-1 words: the kinds a target may be, the kinds an extends may join', () => {
+  const target = run(file(d1, [concept('q', 'attribute'), concept('p', 'attribute', { 'values-of': 'q', of: 'q' })], { models: false }));
+  assert.match(message(target.problems), /concept p: of names q, which is an attribute, not an entity$/m);
+  assert.match(message(target.problems), /concept p: values-of names q, which is an attribute, not an entity$/m);
+  const joins = run(file(d1, [concept('e', 'entity'), concept('a', 'attribute', { extends: 'e' }), concept('f', 'entity', { extends: 'a' })], { models: false }));
+  assert.match(message(joins.problems), /concept a: an attribute cannot extend e, which is an entity; extends means "is a kind of", and an attribute may extend only attribute or dimension$/m);
+  assert.match(message(joins.problems), /concept f: an entity cannot extend a, which is an attribute; extends means "is a kind of", and an entity may extend only entity$/m);
+  // and the same mistakes in a draft-2 file in draft-2 words
+  const target2 = run(file(d2, [concept('q', 'property'), concept('p', 'property', { 'values-of': 'q' })], { models: false }));
+  assert.match(message(target2.problems), /which is a property, not an entity or a value-set$/m);
+  const joins2 = run(file(d2, [concept('e', 'entity'), concept('a', 'property', { extends: 'e' }), concept('f', 'entity', { extends: 'a' })], { models: false }));
+  assert.match(message(joins2.problems), /a property may extend only property or dimension$/m);
+  assert.match(message(joins2.problems), /an entity may extend only entity or value-set$/m);
 });
 
 test('4.2: a draft-1 file keeps what draft 1 allowed: nothing it allowed becomes a problem', () => {
