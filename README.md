@@ -57,6 +57,10 @@ a new id, and old concepts are deprecated, not deleted, so pinned references
 keep resolving. [`FORMAT.md`](FORMAT.md) has the rest: required fields, case and
 default rules, uniqueness, bindings and what a checker reports.
 
+## Used in DataTug development
+
+[DataTug](https://datatug.app) is working on connecting its data-model structure to shared meanings from this graph. That semantic integration is ongoing. [See the tools behind DataTug](https://datatug.app/en/under-the-hood/tools-we-built/#contracts).
+
 Draft: the format may change before `meaning/1`, and the value lists are starter
 subsets, not the full ISO lists.
 
