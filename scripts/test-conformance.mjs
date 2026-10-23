@@ -617,17 +617,18 @@ test('D-14: a written reference line under order on Order.CustomerId is refused,
   refuse(report, 'binding-role');
   assert.equal(report.links, null);
 });
-test('D-15: a reference written with the module name derives nothing (N17)', () => {
+test('D-15: exact self-qualified references now derive through the effective reader (source-policy extension of N17)', () => {
   const hcl = hclWith((text) => text.replace('record = "Customer"', 'record = "shop.Customer"'));
   const report = links(file(d2, base(d2)), { hcl });
   accept(report);
-  assert.deepEqual(report.links, baseLinks.filter((entry) => entry.field !== 'CustomerId'));
+  assert.deepEqual(report.links, baseLinks);
 });
-test('D-16: a reference to a record type the model does not declare derives nothing', () => {
+test('D-16: known-local missing record references now fail independent source preflight', () => {
   const hcl = hclWith((text) => text.replace('record = "Customer"', 'record = "Ghost"'));
   const report = links(file(d2, base(d2)), { hcl });
-  accept(report);
-  assert.deepEqual(report.links, baseLinks.filter((entry) => entry.field !== 'CustomerId'));
+  refuse(report, 'binding-model');
+  assert.match(message(report.problems), /unknown record Ghost in a known model/);
+  assert.equal(report.links, null);
 });
 test('D-17: the same written line twice: one link, with the first line\'s note', () => {
   const report = links(file(d2, base(d2, [], { customer: [bind(d2, 'Order', 'CustomerId', 'reference', { note: 'first' }), bind(d2, 'Order', 'CustomerId', 'reference', { note: 'second' })] })));

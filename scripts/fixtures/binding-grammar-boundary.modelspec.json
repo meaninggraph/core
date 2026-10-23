@@ -1,0 +1,94 @@
+{
+  "modelspec": "1.0-draft-2",
+  "module": {
+    "id": "github.com/example/semantic/boundary/m",
+    "name": "m",
+    "version": "1"
+  },
+  "components": {
+    "KeyParts": {
+      "fields": {
+        "field-name": {
+          "type": "int"
+        },
+        "a.b": {
+          "type": "int"
+        },
+        "部分": {
+          "type": "int"
+        },
+        "﻿": {
+          "type": "int"
+        }
+      }
+    }
+  },
+  "records": {
+    "Target": {
+      "key": [
+        "id"
+      ],
+      "fields": {
+        "id": {
+          "type": "int"
+        }
+      }
+    },
+    "Order-Line": {
+      "fields": {
+        "target": {
+          "record": "Target"
+        }
+      }
+    },
+    "_Record": {
+      "fields": {
+        "target": {
+          "record": "Target"
+        }
+      }
+    },
+    "Thing?ref=abc": {
+      "fields": {
+        "target": {
+          "record": "Target"
+        }
+      }
+    },
+    "IncomingFields": {
+      "fields": {
+        "field-name": {
+          "record": "Target"
+        },
+        "a.b": {
+          "record": "Target"
+        },
+        "部分": {
+          "record": "Target"
+        },
+        "﻿": {
+          "record": "Target"
+        }
+      }
+    },
+    "InheritedKey": {
+      "use": [
+        "KeyParts"
+      ],
+      "key": [
+        "field-name",
+        "a.b",
+        "部分",
+        "﻿"
+      ],
+      "fields": {}
+    },
+    "Unrelated-Broad": {
+      "fields": {
+        "field-name": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

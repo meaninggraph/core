@@ -22,7 +22,9 @@ import { dirname, join } from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { parse as parseYaml } from 'yaml';
-import { parseHcl, toModelspecJson, vocabularies, vocabularyOf } from './modelspec.mjs';
+import { parseHcl, toModelspecJson } from './modelspec.mjs';
+import { createEffectiveModelResolver, ModelCapabilityError } from './effective-model.mjs';
+import { diagnosticText, modelMessage, modelMessageBytes } from './model-diagnostic.mjs';
 
 // Where meaning:// repositories are read from, keyed by {host}/{org}/{repo}.
 // `git` fetches the repository at the ?ref= pin that the references carry (see
@@ -220,11 +222,13 @@ export function createResolver({ root, sources = meaningSources, cacheDir = defa
   return resolve;
 }
 
-function loadModels(file, doc) {
+function loadModels(file, doc, origins) {
   const models = {};
   for (const [module, relative] of Object.entries(doc.models ?? {})) {
-    const text = readFileSync(join(dirname(file), relative), 'utf8');
+    const source = join(dirname(file), relative);
+    const text = readFileSync(source, 'utf8');
     models[module] = toModelspecJson(parseHcl(text), { id: module, name: module, version: 'unversioned' });
+    origins?.set(models[module], source);
   }
   return models;
 }
@@ -406,13 +410,20 @@ const keyOf = (record) => (Array.isArray(record?.key) ? record.key : []);
 // FORMAT.md, "Derived links". `files` is [{ doc, models }]: a parsed meaning file and its models (module short name ->
 // the model as toModelspecJson returns it). The result is the written and the derived links of the graph, sorted.
 const compareBytes = (a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b));
-export function deriveLinks(files) {
+export function deriveLinks(files, limits = {}) {
+  const resolvers = new Map();
+  const resolverFor = (models, supplied) => {
+    if (supplied) return supplied;
+    if (!resolvers.has(models)) resolvers.set(models, createEffectiveModelResolver(models, limits));
+    return resolvers.get(models);
+  };
   const links = new Map();
   const identity = (concept, module, record, field, role) => JSON.stringify([concept, module, record, field ?? null, role]);
   const instances = [];
   const link = (concept, module, record, field, role, extra = {}) => ({ concept, model: `modelspec:///${module}.${record}`, ...(field === undefined ? {} : { field }), role, ...extra });
   // Written links, in file order; a line that repeats the five parts of an earlier one adds nothing.
-  for (const { doc, models } of files) {
+  for (const { doc, models, resolver } of files) {
+    resolverFor(models, resolver).assertValid();
     for (const concept of Array.isArray(doc?.concepts) ? doc.concepts : []) {
       for (const binding of Array.isArray(concept?.bindings) ? concept.bindings : []) {
         const parsed = typeof binding?.model === 'string' ? parseModelRef(binding.model) : null;
@@ -421,29 +432,51 @@ export function deriveLinks(files) {
         const field = role === 'instances' ? undefined : fieldOf(binding, doc.format);
         const id = identity(concept.id, parsed.module, parsed.name, field, role);
         if (!links.has(id)) links.set(id, link(concept.id, parsed.module, parsed.name, field, role, { ...(binding.note ? { note: binding.note } : {}), ...(binding.match ? { match: binding.match } : {}) }));
-        if (role === 'instances') instances.push({ concept: concept.id, module: parsed.module, record: parsed.name, models });
+        if (role === 'instances') instances.push({ concept: concept.id, module: parsed.module, record: parsed.name, resolver: resolverFor(models, resolver) });
       }
     }
   }
   // Derived links: the references to a record type bound with role instances, and its key.
-  const derived = (concept, module, record, field, role) => {
+  const derived = (concept, module, record, field, role, resolver) => {
+    // Source names are broader than the existing binding DSL. A required link
+    // must be representable without changing that grammar or dropping the fact.
+    const uriName = /^[A-Za-z][A-Za-z0-9_]*$/;
+    const fieldName = /^[A-Za-z_][A-Za-z0-9_]*$/;
+    if (!uriName.test(module) || !uriName.test(record) || field !== undefined && !fieldName.test(field)) {
+      resolver.capability('binding-representation-unavailable', modelMessage`cannot derive complete links: ${module}.${record} field ${field ?? '(record)'} is not representable by the existing binding grammar`);
+    }
+    const address = `modelspec:///${module}.${record}`;
+    const parsed = parseModelRef(address);
+    if (!parsed || parsed.module !== module || parsed.name !== record || parsed.repo !== undefined || parsed.ref !== undefined) resolver.capability('binding-representation-unavailable', modelMessage`cannot derive complete links: ${module}.${record} is not representable by the existing model reference grammar`);
     const id = identity(concept, module, record, field, role);
     if (!links.has(id)) links.set(id, link(concept, module, record, field, role, { derived: true }));
   };
-  for (const { concept, module, record, models } of instances) {
-    const model = models?.[module];
-    if (!model) continue;
-    const words = vocabularyOf(model) ?? vocabularies.earlier;
-    const records = model[words.records] ?? {};
-    for (const name of Object.keys(records)) {
-      const fields = records[name]?.[words.fields] ?? {};
-      for (const field of Object.keys(fields)) {
-        if (fields[field]?.[words.record] === record) derived(concept, module, name, field, 'reference');
+  for (const { concept, module, record, resolver } of instances) {
+    resolver.assertValid();
+    const target = resolver.record(module, record);
+    if (!target) resolver.capability('record-unavailable', modelMessage`cannot derive complete links: ${module}.${record} is unavailable`);
+    const seen = new Map();
+    for (const [alias, owner] of resolver.aliases) {
+      if (!seen.has(owner.identity)) seen.set(owner.identity, new Set());
+      for (const name of Object.keys(owner.records)) {
+        if (seen.get(owner.identity).has(name)) continue;
+        seen.get(owner.identity).add(name);
+        if (!resolver.spend()) resolver.capability('model-work-limit', 'derived link work limit reached');
+        const candidate = resolver.record(alias, name);
+        for (const [field, info] of resolver.requireComplete(candidate)) {
+          if (!resolver.spend()) resolver.capability('model-work-limit', 'derived link work limit reached');
+          const reference = resolver.recordReference(info);
+          if (reference?.status === 'unavailable') resolver.capability('reference-unavailable', modelMessage`cannot derive complete links for ${alias}.${name}.${field}: ${reference.message}`);
+          if (reference?.status === 'known' && reference.owner.identity === target.owner.identity && reference.name === target.name) derived(concept, owner.identity === target.owner.identity ? module : alias, name, field, 'reference', resolver);
+        }
       }
     }
-    if (Object.hasOwn(records, record)) {
-      const fields = records[record][words.fields] ?? {};
-      for (const key of keyOf(records[record])) if (Object.hasOwn(fields, key)) derived(concept, module, record, key, 'identifier');
+    for (const key of keyOf(target.definition)) {
+      if (!resolver.spend()) resolver.capability('model-work-limit', 'derived link work limit reached');
+      const field = resolver.field(target, key);
+      if (field.status === 'absent') continue; // known absence is the existing key/field intersection rule
+      if (field.status !== 'known') resolver.capability('key-unavailable', modelMessage`cannot derive complete identifier links for ${module}.${record}.${key}: ${field.message ?? 'key field is absent'}`);
+      derived(concept, module, record, key, 'identifier', resolver);
     }
   }
   return [...links.values()].sort((a, b) => compareBytes(a.concept, b.concept) || compareBytes(a.model, b.model) || compareBytes(a.field ?? '', b.field ?? '') || (a.field === undefined ? 0 : 1) - (b.field === undefined ? 0 : 1) || compareBytes(a.role, b.role));
@@ -469,7 +502,15 @@ export function checkMeaning({ notice, ...rest }) {
 export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, models: givenModels, selfRepo, derive = false }) {
   const problems = [];
   const notices = [];
-  const add = (rule, message) => problems.push({ rule, message });
+  let capabilityFindings = 0;
+  let omittedCapabilities = 0;
+  const add = (rule, message) => {
+    if (rule === 'model-capability') {
+      if (capabilityFindings++ >= 64) { omittedCapabilities++; return; }
+      message = diagnosticText(message, modelMessageBytes);
+    }
+    problems.push({ rule, message });
+  };
   const note = (rule, message) => notices.push({ rule, message });
   for (const message of local.problems) add('duplicate-concept', message);
   const resolve = (repo, ref) => (selfRepo !== undefined && repo === selfRepo ? local : resolveOther(repo, ref));
@@ -500,8 +541,10 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
   };
   // ModelSpec record types whose rows are instances of a concept (role instances, written entity or instances).
   const entityBindings = (concept) => (concept.bindings ?? []).filter((b) => roleOf(b) === 'instances').map((b) => parseModelRef(b.model)).filter(Boolean);
-  const sameEntity = (a, b) => a.repo === b.repo && a.module === b.module && a.name === b.name;
   const loaded = [];
+  const byDocument = new Map();
+  const modelOrigins = new WeakMap();
+  const referenceProofs = [];
   for (const file of local.files) {
     const { path, doc } = file;
     const format = doc?.format;
@@ -527,15 +570,19 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
     }
     if (!Array.isArray(doc?.concepts)) continue;
     let models = givenModels;
-    try { models ??= loadModels(path, doc); } catch (error) { add('models', `${path}: models: ${error.message}`); models = {}; }
-    loaded.push({ doc, models });
+    try { models ??= loadModels(path, doc, modelOrigins); } catch (error) { add('models', `${path}: models: ${error.message}`); models = {}; }
+    const modelResolver = createEffectiveModelResolver(models, { identityFor: (model) => modelOrigins.get(model) ?? model });
+    for (const invalid of modelResolver.invalid) add('binding-model', modelMessage`${path}: models: ${invalid.message}`);
+    const modelContext = { doc, models, resolver: modelResolver };
+    loaded.push(modelContext);
+    byDocument.set(doc, modelContext);
     const sourceIds = new Set();
     for (const source of doc.sources ?? []) {
       if (sourceIds.has(source.id)) add('duplicate-source', `${path}: source ${source.id} is declared twice`);
       sourceIds.add(source.id);
     }
     for (const concept of doc.concepts) {
-      const where = `${path}: concept ${concept.id}`;
+      const where = modelMessage`${path}: concept ${concept.id}`;
       const entityLike = format === draft2 ? 'an entity or a value-set' : 'an entity';
       if (concept.of) {
         const owner = lookup(concept.of, `${where} of`);
@@ -616,29 +663,32 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
         const parsed = parseModelRef(binding.model);
         if (!parsed) { add('binding-model', `${where}: ${binding.model} is not a modelspec:// reference`); continue; }
         if (parsed.repo) { add('binding-model', `${where}: ${binding.model} points at another repository; this check resolves same-repository models only`); continue; }
-        const model = models[parsed.module];
-        if (!model) { add('binding-model', `${where}: ${binding.model}: module ${parsed.module} is not listed in models`); continue; }
-        // A model is read in the vocabulary its identifier names (1.0-draft: entities, properties; 1.0-draft-2: records, fields);
-        // one with no identifier is read in the earlier one, as it always was.
-        const words = vocabularyOf(model) ?? vocabularies.earlier;
-        const entity = model[words.records]?.[parsed.name];
-        if (!entity) { add('binding-model', `${where}: ${binding.model}: module ${parsed.module} has no entity ${parsed.name}`); continue; }
+        if (!modelResolver.aliases.has(parsed.module)) { add('binding-model', `${where}: ${binding.model}: module ${parsed.module} is not listed in models`); continue; }
+        const record = modelResolver.record(parsed.module, parsed.name);
+        if (!record) { add('binding-model', `${where}: ${binding.model}: module ${parsed.module} has no entity ${parsed.name}`); continue; }
+        const entity = record.definition;
         const field = fieldOf(binding, format);
         if (!field) continue;
-        const member = entity[words.fields]?.[field];
-        if (!member) { add('binding-model', `${where}: ${binding.model}: entity ${parsed.name} has no property ${field}`); continue; }
-        const at = `${where}: ${parsed.name}.${field}`;
-        const reference = member[words.record];
+        const fact = modelResolver.field(record, field);
+        if (fact.status === 'absent') { add('binding-model', `${where}: ${binding.model}: entity ${parsed.name} has no property ${field}`); continue; }
+        if (fact.status !== 'known') { add('model-capability', modelMessage`${where}: ${binding.model}: cannot prove property ${field}: ${fact.message}`); continue; }
+        const member = fact.member;
+        const at = modelMessage`${where}: ${parsed.name}.${field}`;
+        const reference = member[fact.owner.words.record];
+        const memberType = member.type ?? (member.component ? `component ${member.component}` : 'unknown value');
         // identifier and display-name describe the rows of the concept's own entity.
         if (binding.role === 'identifier' || binding.role === 'display-name') {
           if (entities.length === 0) add('binding-role', `${at} has role ${binding.role}, but ${concept.id} has no entity binding, so it cannot be checked which entity the property must sit on`);
-          else if (entities.length === 1 && !sameEntity(entities[0], parsed)) add('binding-role', `${at} has role ${binding.role}, but ${concept.id} is bound to the entity ${entities[0].name}; the property must be on that entity`);
+          else if (entities.length === 1 && !(() => {
+            const owner = modelResolver.record(entities[0].module, entities[0].name);
+            return entities[0].repo === parsed.repo && owner && owner.owner.identity === record.owner.identity && owner.name === record.name;
+          })()) add('binding-role', `${at} has role ${binding.role}, but ${concept.id} is bound to the entity ${entities[0].name}; the property must be on that entity`);
         }
         if (binding.role === 'identifier' && !keyOf(entity).includes(field)) add('binding-role', `${at} has role identifier but is not in the key of ${parsed.name} [${keyOf(entity).join(', ')}]`);
-        if (binding.role === 'display-name' && member.type !== 'string') add('binding-role', `${at} has role display-name but is ${reference ? `a reference to ${reference}` : an(member.type)}, not a string`);
+        if (binding.role === 'display-name' && member.type !== 'string') add('binding-role', `${at} has role display-name but is ${reference ? `a reference to ${reference}` : an(memberType)}, not a string`);
         if (binding.role === 'value' && reference) add('binding-role', `${at} has role value but is a reference to ${reference}; bind it with role reference`);
         if (roleOf(binding) === 'reference') {
-          if (!reference) { add('binding-role', `${at} has role ${binding.role} but is not a reference (it is ${an(member.type)})`); continue; }
+          if (!reference) { add('binding-role', `${at} has role ${binding.role} but is not a reference (it is ${an(memberType)})`); continue; }
           // The reference must point at the entity whose rows are the instances:
           // this concept's own (an entity) or those of its values-of entity.
           let target = null;
@@ -652,12 +702,35 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
           // Only this repository's own bindings name models this check can read.
           const expected = target.repo === local ? entityBindings(target.concept) : [];
           if (expected.length === 0) add('binding-role', `${at} has role ${binding.role}, but ${target.concept.id} has no entity binding in this repository, so it cannot be checked that ${reference} holds its instances; bind ${target.concept.id} (or a concept of this repository that extends it) to its entity`);
-          else if (!expected.some((e) => e.module === parsed.module && e.name === reference)) add('binding-role', `${at} references ${reference}, but the instances of ${target.concept.id} are ${expected.map((e) => e.name).join(', ')} rows`);
+          else referenceProofs.push(() => {
+            const referenceFact = modelResolver.recordReference(fact);
+            if (referenceFact.status !== 'known') {
+              if (referenceFact.status === 'unavailable') add('model-capability', modelMessage`${at}: cannot prove reference target ${reference}: ${referenceFact.message}`);
+              return; // known malformed/local-missing references were preflighted
+            }
+            const targetDocument = local.concepts.get(target.concept.id)?.doc;
+            const targetResolver = byDocument.get(targetDocument)?.resolver;
+            const matches = expected.some((binding) => {
+              const destination = binding.repo ? null : targetResolver?.record(binding.module, binding.name);
+              return destination && destination.owner.identity === referenceFact.owner.identity && destination.name === referenceFact.name;
+            });
+            if (!matches) add('binding-role', `${at} references ${reference}, but the instances of ${target.concept.id} are ${expected.map((e) => e.name).join(', ')} rows`);
+          });
         }
       }
     }
   }
-  return { problems, notices, links: derive && problems.length === 0 ? deriveLinks(loaded) : null };
+  for (const prove of referenceProofs) prove();
+  let links = null;
+  if (derive && problems.length === 0) {
+    try { links = deriveLinks(loaded); }
+    catch (error) {
+      if (!(error instanceof ModelCapabilityError)) throw error;
+      add('model-capability', modelMessage`${error.code}: ${error.message} (${error.diagnostics.length} diagnostics; first: ${error.diagnostics[0]?.message ?? 'none'})`);
+    }
+  }
+  if (omittedCapabilities) problems.push({ rule: 'model-capability', message: modelMessage`${omittedCapabilities} additional model capability diagnostics omitted` });
+  return { problems, notices, links };
 }
 
 // Checks that every distinct value stored in a column bound with role value

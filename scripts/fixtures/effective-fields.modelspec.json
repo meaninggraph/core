@@ -1,0 +1,74 @@
+{
+  "modelspec": "1.0-draft-2",
+  "module": {
+    "id": "github.com/example/semantic/model/m",
+    "name": "m",
+    "version": "1"
+  },
+  "components": {
+    "Common": {
+      "fields": {
+        "id": {
+          "type": "int"
+        },
+        "Name": {
+          "type": "string"
+        },
+        "target": {
+          "record": "m.Target"
+        },
+        "nested": {
+          "component": "Node"
+        }
+      }
+    },
+    "Other": {
+      "fields": {
+        "Name": {
+          "type": "int"
+        }
+      }
+    },
+    "Node": {
+      "fields": {
+        "self": {
+          "component": "Node"
+        }
+      }
+    }
+  },
+  "records": {
+    "Thing": {
+      "use": [
+        "Common",
+        "m.Common",
+        "Common"
+      ],
+      "key": [
+        "id"
+      ],
+      "fields": {}
+    },
+    "Target": {
+      "key": [
+        "id"
+      ],
+      "fields": {
+        "id": {
+          "type": "int"
+        }
+      }
+    },
+    "Override": {
+      "use": [
+        "Common",
+        "Other"
+      ],
+      "fields": {
+        "Name": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
