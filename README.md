@@ -20,7 +20,37 @@ columns to them.
 | `commerce.meaning.yaml` | customer, order, order-line, commercial-line-item, invoice, invoice-line, invoice-total, price, unit-price, quantity, revenue |
 | `identity.meaning.yaml` | person, organization, employee, manager |
 | `calendar.meaning.yaml` | date |
+| `connected.meaning.yaml` | Teams and organizational units; contacts, places, addresses and time zones; products, services, payments, payment obligations, financial accounts, contracts, assets and shipments; projects, tasks, events, reservations, documents and observations |
 | `statistics.meaning.yaml` | per-capita (a pattern for ratios) |
+
+## Three connected demonstrations
+
+[`examples/connected-demonstrations.json`](examples/connected-demonstrations.json)
+contains fictional records for a purchase, Lantern Repair Day in Dublin, and a
+projector maintenance job. The same asset ASSET-P17 links all three journeys.
+An order requests one projector model and a setup service; its EUR 1,200 invoice
+is illustrated by a EUR 700 payment and an original EUR 1,200 obligation whose
+outstanding balance is EUR 500 as of the recorded snapshot. Payment currency is
+recorded separately. The reconciliation is a stated fact of this example:
+real allocation between many payments and obligations needs link records and
+allocation amounts in the consuming model, not an assumed universal one-to-one
+relationship.
+
+The event runs 14 November 2026, 10:00–16:00 using IANA Europe/Dublin civil time;
+the hall reservation covers setup and teardown as well. The maintenance task
+uses document DOC-SERVICE revision A and observation OBS-LAMP: 1,980 lamp hours
+against an advisory 2,000-hour service interval. This observation establishes
+neither failure nor a safety threshold.
+
+These `{id, entity, properties}` records and `{ref: "record-id"}` references are
+an executable illustration, not a new schema or exchange protocol. The tests
+check this example's scalar choices, typed references, shared identities,
+monetary reconciliation and time intervals. Semantic attributes identify their
+entity with `of` and reference target with `values-of`. The meaning format does
+not encode scalar datatypes, requiredness or cardinality: singular example
+values do not require single membership, ownership or participation. Separate
+person and organization roles avoid imposing one universal kind of owner.
+Dataset-specific bindings, cardinalities and allocation models belong downstream.
 
 ## Which files are read
 

@@ -1,0 +1,431 @@
+{
+  "description": "Fictional connected illustrations, not a storage schema or protocol.",
+  "journeys": {
+    "purchase": [
+      "PO-104",
+      "PO-104-PRODUCT",
+      "PO-104-SERVICE",
+      "INV-104",
+      "PAY-104",
+      "OBL-104",
+      "ASSET-P17",
+      "SHIP-104",
+      "CONTRACT-104",
+      "ACCOUNT-OPS"
+    ],
+    "event": [
+      "EVT-REPAIR-DAY",
+      "RES-HALL",
+      "PLACE-HALL",
+      "ADDR-HALL",
+      "TZ-DUBLIN",
+      "ORG-LANTERN",
+      "UNIT-OPS",
+      "TEAM-AV",
+      "CP-OPS",
+      "PERSON-MAYA",
+      "ASSET-P17"
+    ],
+    "maintenance": [
+      "PROJ-READY",
+      "TASK-LAMP",
+      "OBS-LAMP",
+      "DOC-SERVICE",
+      "ASSET-P17",
+      "PERSON-MAYA",
+      "TEAM-AV"
+    ]
+  },
+  "purchaseReconciliation": {
+    "invoice": "INV-104",
+    "payment": "PAY-104",
+    "remainingObligation": "OBL-104"
+  },
+  "records": [
+    {
+      "id": "COUNTRY-IE",
+      "entity": "country",
+      "properties": {}
+    },
+    {
+      "id": "CURRENCY-EUR",
+      "entity": "currency",
+      "properties": {}
+    },
+    {
+      "id": "ORG-LANTERN",
+      "entity": "organization",
+      "properties": {
+        "organization-unit": {
+          "ref": "UNIT-OPS"
+        }
+      }
+    },
+    {
+      "id": "ORG-SUPPLIER",
+      "entity": "organization",
+      "properties": {}
+    },
+    {
+      "id": "PERSON-MAYA",
+      "entity": "person",
+      "properties": {
+        "person-team": {
+          "ref": "TEAM-AV"
+        }
+      }
+    },
+    {
+      "id": "TEAM-AV",
+      "entity": "team",
+      "properties": {
+        "team-name": "AV team",
+        "team-organization": {
+          "ref": "ORG-LANTERN"
+        },
+        "team-member": {
+          "ref": "PERSON-MAYA"
+        },
+        "team-contact-point": {
+          "ref": "CP-OPS"
+        }
+      }
+    },
+    {
+      "id": "UNIT-OPS",
+      "entity": "organizational-unit",
+      "properties": {
+        "organizational-unit-name": "Operations",
+        "organizational-unit-organization": {
+          "ref": "ORG-LANTERN"
+        },
+        "organizational-unit-responsibility": "Venue and equipment coordination",
+        "organizational-unit-contact-point": {
+          "ref": "CP-OPS"
+        }
+      }
+    },
+    {
+      "id": "CP-OPS",
+      "entity": "contact-point",
+      "properties": {
+        "contact-point-channel": "email",
+        "contact-point-value": "ops@lantern.example",
+        "contact-point-purpose": "Repair Day operations",
+        "contact-point-organization": {
+          "ref": "ORG-LANTERN"
+        }
+      }
+    },
+    {
+      "id": "ADDR-HALL",
+      "entity": "address",
+      "properties": {
+        "address-street": "14 Lantern Lane (fictional)",
+        "address-locality": "Dublin",
+        "address-country": {
+          "ref": "COUNTRY-IE"
+        }
+      }
+    },
+    {
+      "id": "TZ-DUBLIN",
+      "entity": "time-zone",
+      "properties": {
+        "time-zone-identifier": "Europe/Dublin",
+        "time-zone-naming-system": "IANA tzdb",
+        "time-zone-label": "Dublin civil time",
+        "time-zone-description": "Civil time rules used at the fictional hall in Dublin"
+      }
+    },
+    {
+      "id": "PLACE-HALL",
+      "entity": "place",
+      "properties": {
+        "place-name": "Lantern Hall (fictional)",
+        "place-address": {
+          "ref": "ADDR-HALL"
+        },
+        "place-time-zone": {
+          "ref": "TZ-DUBLIN"
+        },
+        "place-description": "Community repair venue"
+      }
+    },
+    {
+      "id": "PRJ-MODEL",
+      "entity": "product",
+      "properties": {
+        "product-name": "Portable projector",
+        "product-model-code": "LP-17",
+        "product-description": "Portable presentation projector",
+        "product-supplier": {
+          "ref": "ORG-SUPPLIER"
+        }
+      }
+    },
+    {
+      "id": "SERVICE-SETUP",
+      "entity": "service",
+      "properties": {
+        "service-name": "Projector setup",
+        "service-description": "Configure and test presentation equipment",
+        "service-provider-organization": {
+          "ref": "ORG-SUPPLIER"
+        }
+      }
+    },
+    {
+      "id": "ACCOUNT-OPS",
+      "entity": "financial-account",
+      "properties": {
+        "financial-account-name": "Lantern operations account",
+        "financial-account-identifier": "fictional-ops",
+        "financial-account-currency": {
+          "ref": "CURRENCY-EUR"
+        },
+        "financial-account-holder-organization": {
+          "ref": "ORG-LANTERN"
+        }
+      }
+    },
+    {
+      "id": "CONTRACT-104",
+      "entity": "contract",
+      "properties": {
+        "contract-name": "Projector supply and setup agreement",
+        "contract-reference": "CONTRACT-104",
+        "contract-party-organization": {
+          "ref": "ORG-LANTERN"
+        }
+      }
+    },
+    {
+      "id": "PO-104",
+      "entity": "order",
+      "properties": {
+        "order-contract": {
+          "ref": "CONTRACT-104"
+        },
+        "order-buyer-organization": {
+          "ref": "ORG-LANTERN"
+        }
+      }
+    },
+    {
+      "id": "PO-104-PRODUCT",
+      "entity": "order-line",
+      "properties": {
+        "order-line-order": {
+          "ref": "PO-104"
+        },
+        "order-line-product": {
+          "ref": "PRJ-MODEL"
+        },
+        "order-line-quantity": 1
+      }
+    },
+    {
+      "id": "PO-104-SERVICE",
+      "entity": "order-line",
+      "properties": {
+        "order-line-order": {
+          "ref": "PO-104"
+        },
+        "order-line-service": {
+          "ref": "SERVICE-SETUP"
+        },
+        "order-line-quantity": 1
+      }
+    },
+    {
+      "id": "INV-104",
+      "entity": "invoice",
+      "properties": {
+        "invoice-order": {
+          "ref": "PO-104"
+        },
+        "invoice-currency": {
+          "ref": "CURRENCY-EUR"
+        },
+        "invoice-total": 1200
+      }
+    },
+    {
+      "id": "PAY-104",
+      "entity": "payment",
+      "properties": {
+        "payment-amount": 700,
+        "payment-currency": {
+          "ref": "CURRENCY-EUR"
+        },
+        "payment-date": "2026-11-10",
+        "payment-payer-organization": {
+          "ref": "ORG-LANTERN"
+        },
+        "payment-financial-account": {
+          "ref": "ACCOUNT-OPS"
+        },
+        "payment-related-obligation": {
+          "ref": "OBL-104"
+        }
+      }
+    },
+    {
+      "id": "OBL-104",
+      "entity": "payment-obligation",
+      "properties": {
+        "payment-obligation-amount": 1200,
+        "payment-obligation-currency": {
+          "ref": "CURRENCY-EUR"
+        },
+        "payment-obligation-invoice": {
+          "ref": "INV-104"
+        },
+        "payment-obligation-debtor-organization": {
+          "ref": "ORG-LANTERN"
+        },
+        "payment-obligation-due-date": "2026-11-20",
+        "payment-obligation-outstanding-amount": 500,
+        "payment-obligation-balance-as-of": "2026-11-10T17:00:00Z"
+      }
+    },
+    {
+      "id": "ASSET-P17",
+      "entity": "asset",
+      "properties": {
+        "asset-identifier": "ASSET-P17",
+        "asset-name": "Hall portable projector",
+        "asset-product": {
+          "ref": "PRJ-MODEL"
+        },
+        "asset-custodian-organization": {
+          "ref": "ORG-LANTERN"
+        },
+        "asset-place": {
+          "ref": "PLACE-HALL"
+        }
+      }
+    },
+    {
+      "id": "SHIP-104",
+      "entity": "shipment",
+      "properties": {
+        "shipment-reference": "SHIP-104",
+        "shipment-order": {
+          "ref": "PO-104"
+        },
+        "shipment-asset": {
+          "ref": "ASSET-P17"
+        },
+        "shipment-destination": {
+          "ref": "PLACE-HALL"
+        }
+      }
+    },
+    {
+      "id": "EVT-REPAIR-DAY",
+      "entity": "event",
+      "properties": {
+        "event-name": "Lantern Repair Day",
+        "event-start": "2026-11-14T10:00:00",
+        "event-end": "2026-11-14T16:00:00",
+        "event-time-zone": {
+          "ref": "TZ-DUBLIN"
+        },
+        "event-place": {
+          "ref": "PLACE-HALL"
+        },
+        "event-organizer": {
+          "ref": "ORG-LANTERN"
+        },
+        "event-asset": {
+          "ref": "ASSET-P17"
+        }
+      }
+    },
+    {
+      "id": "RES-HALL",
+      "entity": "reservation",
+      "properties": {
+        "reservation-reference": "RES-HALL",
+        "reservation-place": {
+          "ref": "PLACE-HALL"
+        },
+        "reservation-event": {
+          "ref": "EVT-REPAIR-DAY"
+        },
+        "reservation-start": "2026-11-14T09:00:00",
+        "reservation-end": "2026-11-14T17:00:00",
+        "reservation-time-zone": {
+          "ref": "TZ-DUBLIN"
+        }
+      }
+    },
+    {
+      "id": "PROJ-READY",
+      "entity": "project",
+      "properties": {
+        "project-name": "Repair Day equipment readiness",
+        "project-objective": "Review projector lamp usage before the gathering",
+        "project-team": {
+          "ref": "TEAM-AV"
+        },
+        "project-event": {
+          "ref": "EVT-REPAIR-DAY"
+        }
+      }
+    },
+    {
+      "id": "DOC-SERVICE",
+      "entity": "document",
+      "properties": {
+        "document-title": "Projector service guidance",
+        "document-reference": "DOC-SERVICE",
+        "document-revision": "A",
+        "document-subject-asset": {
+          "ref": "ASSET-P17"
+        },
+        "document-media-type": "application/pdf"
+      }
+    },
+    {
+      "id": "OBS-LAMP",
+      "entity": "observation",
+      "properties": {
+        "observation-subject-asset": {
+          "ref": "ASSET-P17"
+        },
+        "observation-observed-at": "2026-11-12T14:00:00Z",
+        "observation-description": "Lamp hours 1980 of advisory service interval 2000; this is not a measured failure or safety threshold.",
+        "observation-value": 1980,
+        "observation-unit": "hours",
+        "observation-observer": {
+          "ref": "PERSON-MAYA"
+        }
+      }
+    },
+    {
+      "id": "TASK-LAMP",
+      "entity": "task",
+      "properties": {
+        "task-name": "Review lamp service guidance",
+        "task-project": {
+          "ref": "PROJ-READY"
+        },
+        "task-assignee": {
+          "ref": "PERSON-MAYA"
+        },
+        "task-asset": {
+          "ref": "ASSET-P17"
+        },
+        "task-evidence-document": {
+          "ref": "DOC-SERVICE"
+        },
+        "task-observation": {
+          "ref": "OBS-LAMP"
+        }
+      }
+    }
+  ]
+}
