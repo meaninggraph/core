@@ -34,7 +34,7 @@ const concept = (files, id) => Object.values(files).flatMap((doc) => doc?.concep
 test('every meaning file in the repository passes the schema and the cross-concept checks', () => {
   const { problems, concepts, files } = checkCore();
   assert.deepEqual(problems, []);
-  assert.equal(files, 6);
+  assert.equal(files, 7);
   assert.ok(concepts >= 20);
   assert.equal(problemsOf(), '', 'a copy of the files through the YAML round trip passes too');
 });
@@ -102,13 +102,13 @@ test('the rules of this repository fail: licence, bindings, models, hidden files
 
 test('the command line exits 0 on the repository and 1 with the problems on a broken copy', () => {
   const script = join(root, 'scripts', 'check.mjs');
-  assert.match(execFileSync('node', [script], { encoding: 'utf8' }), /^ok: \d+ concepts in 6 files/);
+  assert.match(execFileSync('node', [script], { encoding: 'utf8' }), /^ok: \d+ concepts in 7 files/);
   const broken = variant((files) => { delete concept(files, 'country').description; concept(files, 'person').synonyms.en.push('people'); concept(files, 'population').synonyms.en.push('people'); });
   const run = spawnSync('node', [script, broken], { encoding: 'utf8' });
   assert.equal(run.status, 1);
   assert.match(run.stderr, /error: geo.meaning.yaml: schema: \/concepts\/0 must have required property 'description'/);
   assert.match(run.stderr, /"people" \(en\) is also a word of concept population/);
-  assert.match(run.stderr, /\d+ problems in 6 files/);
+  assert.match(run.stderr, /\d+ problems in 7 files/);
 });
 
 // ---- bindings to a ModelSpec model, in either spelling ----------------------------------------------------------
