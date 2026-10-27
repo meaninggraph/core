@@ -34,9 +34,72 @@ const concept = (files, id) => Object.values(files).flatMap((doc) => doc?.concep
 test('every meaning file in the repository passes the schema and the cross-concept checks', () => {
   const { problems, concepts, files } = checkCore();
   assert.deepEqual(problems, []);
-  assert.equal(files, 7);
+  assert.equal(files, 11);
   assert.ok(concepts >= 20);
   assert.equal(problemsOf(), '', 'a copy of the files through the YAML round trip passes too');
+});
+
+test('IT and SDLC concepts keep the distinctions delivery and support articles need', () => {
+  const files = Object.fromEntries(rootFiles.map((name) => [name, parseYaml(readFileSync(join(root, name), 'utf8'))]));
+  const at = (id) => concept(files, id);
+  assert.equal(at('work-item').extends, 'task');
+  assert.equal(at('epic').extends, 'work-item');
+  assert.equal(at('user-story').extends, 'work-item');
+  assert.equal(at('delivery-task').extends, 'work-item');
+  assert.equal(at('bug').extends, 'work-item');
+  assert.equal(at('bug').synonyms.en.includes('defect'), true);
+  assert.equal(at('bug').synonyms.en.includes('error'), false);
+  assert.equal(at('technical-debt-item').extends, 'work-item');
+  assert.equal(at('spike').extends, 'work-item');
+  assert.equal(at('incident').extends, 'support-ticket');
+  assert.equal(at('service-request').extends, 'support-ticket');
+  assert.equal(at('problem').extends, undefined);
+  assert.equal(at('known-error').extends, 'problem');
+  assert.equal(at('known-error-workaround'), undefined);
+  assert.equal(at('problem-workaround').of, 'problem');
+  assert.equal(at('incident-workaround').of, 'incident');
+  assert.equal(at('incident-impact').of, 'incident');
+  assert.equal(at('incident-urgency').of, 'incident');
+  assert.equal(at('service-level-agreement').extends, 'contract');
+  assert.equal(at('service-level-objective').extends, undefined);
+  assert.equal(at('service-level-indicator').kind, 'entity');
+  assert.equal(at('postmortem').extends, 'document');
+  assert.equal(at('runbook').extends, 'document');
+  assert.equal(at('alert').extends, 'observation');
+  assert.equal(at('escalation').extends, undefined);
+  assert.equal(at('software-application').extends, undefined);
+  assert.equal(at('stakeholder').extends, undefined);
+  assert.equal(at('stakeholder-team')['values-of'], 'team');
+  assert.equal(at('business-requirement').extends, 'requirement');
+  assert.equal(at('stakeholder-requirement').extends, 'requirement');
+  assert.equal(at('solution-requirement').extends, 'requirement');
+  assert.equal(at('transition-requirement').extends, 'requirement');
+  assert.equal(at('functional-requirement').extends, 'solution-requirement');
+  assert.equal(at('non-functional-requirement').extends, 'solution-requirement');
+  assert.equal(at('acceptance-criterion').of, undefined);
+  assert.equal(at('acceptance-criterion-user-story')['values-of'], 'user-story');
+  assert.equal(at('acceptance-criterion-requirement')['values-of'], 'requirement');
+  assert.equal(at('acceptance-criterion-service')['values-of'], 'service');
+  assert.equal(at('work-item-story-points').of, 'work-item');
+  assert.equal(at('sprint').of, undefined);
+  assert.equal(at('sprint-project')['values-of'], 'project');
+  assert.equal(at('velocity').of, 'sprint');
+  assert.equal(at('sprint-start').extends, 'date');
+  assert.equal(at('support-ticket-tier')['values-of'], 'support-tier');
+  assert.equal(at('deployment-environment')['values-of'], 'environment');
+  assert.equal(at('deployment-outcome').of, 'deployment');
+  assert.equal(at('release-version')['values-of'], 'software-version');
+  assert.equal(at('incident-affected-service')['values-of'], 'service');
+  assert.equal(at('incident-related-bug')['values-of'], 'bug');
+  assert.equal(at('requirement-source')['values-of'], 'stakeholder');
+  assert.equal(at('mean-time-to-restore').synonyms.en.includes('MTTR'), false);
+  assert.equal(at('mean-time-to-restore').synonyms.en.includes('MTRS'), true);
+  assert.equal(at('failed-deployment-recovery-time').synonyms, undefined);
+  for (const id of ['deployment-frequency', 'lead-time-for-changes', 'change-failure-rate', 'failed-deployment-recovery-time', 'mean-time-to-restore', 'mean-time-to-acknowledge', 'availability', 'error-budget']) {
+    assert.equal(at(id).kind, 'measure', id);
+    assert.equal(at(id).measure.aggregation, 'none', id);
+    assert.ok(at(id).measure.formula, id);
+  }
 });
 
 test('orders and invoices remain distinct while their line items share a common parent', () => {
@@ -102,13 +165,13 @@ test('the rules of this repository fail: licence, bindings, models, hidden files
 
 test('the command line exits 0 on the repository and 1 with the problems on a broken copy', () => {
   const script = join(root, 'scripts', 'check.mjs');
-  assert.match(execFileSync('node', [script], { encoding: 'utf8' }), /^ok: \d+ concepts in 7 files/);
+  assert.match(execFileSync('node', [script], { encoding: 'utf8' }), /^ok: \d+ concepts in 11 files/);
   const broken = variant((files) => { delete concept(files, 'country').description; concept(files, 'person').synonyms.en.push('people'); concept(files, 'population').synonyms.en.push('people'); });
   const run = spawnSync('node', [script, broken], { encoding: 'utf8' });
   assert.equal(run.status, 1);
   assert.match(run.stderr, /error: geo.meaning.yaml: schema: \/concepts\/0 must have required property 'description'/);
   assert.match(run.stderr, /"people" \(en\) is also a word of concept population/);
-  assert.match(run.stderr, /\d+ problems in 7 files/);
+  assert.match(run.stderr, /\d+ problems in 11 files/);
 });
 
 // ---- bindings to a ModelSpec model, in either spelling ----------------------------------------------------------

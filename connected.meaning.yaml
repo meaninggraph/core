@@ -566,13 +566,13 @@ concepts:
     of: task
     labels:
       en: Task name
-    description: The name of the work item.
+    description: The name of the task.
   - id: task-project
     kind: attribute
     of: task
     labels:
       en: Task project
-    description: A project containing this work item.
+    description: A project containing this task.
     values-of: project
   - id: task-assignee
     kind: attribute
