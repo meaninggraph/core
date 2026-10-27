@@ -75,6 +75,14 @@ Endpoint roles, which GraphSpec labelled on relationships, need no change: in Me
 
 Schema: like `values` and `complete`, `transitions` and `initial` are allowed only when `kind` is `value-set`, and `inverse` only on a property or dimension with `values-of`.
 
+### Format identifier
+
+The keys are added to `meaning/draft-2`, not to a new `meaning/draft-3`.
+
+- **The owner's words**, 2026-10-27 (conversation, not published), asked whether to extend draft-2 or wait for draft-3: "I delegate this decision to you, I don't mind either".
+- **On record:** `meaninggraph/cli` at `c488f86` (23 October 2026) reads and validates only `meaning/draft-1`; no meaning file in this repository at `3b5f1ab` declares `meaning/draft-2`; FORMAT.md says published graphs stay in draft-1 until readers are released.
+- **Recorder's account:** with no released reader and no published graph in draft-2, adding optional keys to it breaks nobody, while a draft-3 would make every reader handle three formats and delay the first release that reads value sets. Draft-2 is still a draft and may change before `meaning/1`. The decision record for this idea states the choice when the format changes.
+
 ## Alternatives Considered
 
 - **Leave transitions to SpecScore.** Possible moves are a fact about the data, not about one system; keeping them only in a SpecScore spec hides them from everyone who reads the data without SpecScore.
@@ -103,8 +111,8 @@ Schema: like `values` and `complete`, `transitions` and `initial` are allowed on
 
 - **New Features this would create:** TBD at design time
 - **Existing Features affected:** none
-- **Dependencies:** a format identifier decision (see Open Questions); `meaninggraph/cli` release
+- **Dependencies:** `meaninggraph/cli` release that reads `meaning/draft-2`
 
 ## Open Questions
 
-- Should these keys be added to `meaning/draft-2` — which, per `FORMAT.md` (10 October 2026), no released reader reads yet — or wait for a `meaning/draft-3`? This repository's decisions 0002 and 0003 set the precedent for how a format change is recorded.
+None at this time.
