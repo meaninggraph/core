@@ -8,26 +8,24 @@ license: CC0-1.0
 concepts:
   - id: software-application
     kind: entity
-    extends: product
     labels:
       en: Software application
     synonyms:
       en: [application, app]
     description: >-
-      A software product that people run. It may be offered outside the
-      organization or used only inside the organization that builds it. It
-      is not a software component, which is a part of an application, and it
-      is not one version, build, release or deployment of the application.
-      It is not the service users are promised. The service is the
-      capability; an application may be what provides it.
+      Software that people run. It may be offered outside the organization
+      or used only inside the organization that builds it. It is not a
+      product in this graph. A product is a type of good offered for supply.
+      It is not a software component, which is a part of an application, and
+      it is not one version, build, release, or deployment of the
+      application. It is not the service users are promised. The service is
+      the capability. An application may be what provides it.
 
   - id: software-component
     kind: entity
     of: software-application
     labels:
       en: Software component
-    synonyms:
-      en: [module, microservice]
     description: >-
       A part of a software application, such as a module, a library or a
       microservice that is deployed on its own. Calling a part a
@@ -94,14 +92,16 @@ concepts:
     synonyms:
       en: [runtime environment]
     description: >-
-      A named place where a build runs. The usual kinds are development,
-      test, staging and production. Development is where the software is
-      changed. Test is where it is checked. Staging is a production-like
-      place used to rehearse a release. Production is where the service's
-      users are. Organizations use other names and other counts, so those
-      four kinds are not a closed list. An environment is not a deployment
-      into it and not a release. Software that runs in development is not,
-      by that fact, running in production.
+      A subset of infrastructure used for a particular purpose, where a
+      build runs. The usual kinds are development, test, staging, and
+      production. Development is where the software is changed. Test is
+      where it is checked. Staging is a production-like place used to
+      rehearse a release. Production is where the service's users are.
+      Organizations use other names and other counts, so those four kinds
+      are not a closed list. An environment is not a deployment into it and
+      not a release. Software that runs in development is not, by that fact,
+      running in production. The word can also mean external conditions.
+      This concept is the infrastructure used for a purpose.
 
   - id: environment-type
     kind: attribute
@@ -155,11 +155,12 @@ concepts:
     synonyms:
       en: [feature toggle, feature switch]
     description: >-
-      A switch that changes the behavior of software that is already
-      running, without a new deployment and without a new release. The same
-      deployed build can behave differently for different users, or in
-      different environments. A flag is not a version, not a build and not
-      an environment. Turning a flag on is not a deployment.
+      A switch in running software that changes behavior without another
+      deployment and without another release. The flag is usually shipped
+      in a deployment while it is off. Turning it on is a separate act and
+      is not itself a deployment. The same deployed build can behave
+      differently for different users, or in different environments. A flag
+      is not a version, not a build, and not an environment.
 
   - id: feature-flag-application
     kind: attribute
@@ -206,8 +207,6 @@ concepts:
     of: api
     labels:
       en: API endpoint
-    synonyms:
-      en: [endpoint]
     description: >-
       One operation of an API. Where the API uses HTTP, the operation has a
       method and a path. The endpoint is not the API as a whole and not a
@@ -226,8 +225,6 @@ concepts:
     of: api-endpoint
     labels:
       en: API endpoint method
-    synonyms:
-      en: [HTTP method]
     description: >-
       The method of the call. For an HTTP API this is the HTTP method, such
       as GET or POST. The method is not the path, and not every API uses
