@@ -21,6 +21,10 @@ columns to them.
 | `identity.meaning.yaml` | person, organization, employee, manager |
 | `calendar.meaning.yaml` | date |
 | `connected.meaning.yaml` | Teams and organizational units; contacts, places, addresses and time zones; products, services, payments, payment obligations, financial accounts, contracts, assets and shipments; projects, tasks, events, reservations, documents and observations |
+| `operations.meaning.yaml` | Support tickets, incidents, problems, known errors, change requests and service requests; support tiers, escalation, on-call, runbooks and postmortems; service level agreements, objectives and indicators, availability and error budgets; mean time to restore, mean time to acknowledge and failed-deployment recovery time |
+| `delivery.meaning.yaml` | Work items, epics, user stories, bugs, technical debt and spikes; sprints, releases, deployments, pull requests and code review; story points, velocity, cycle time, deployment frequency, lead time for changes and change failure rate |
+| `requirements.meaning.yaml` | Requirements (business, functional and non-functional), use cases, acceptance criteria, stakeholders, business rules, business processes and key performance indicators |
+| `software.meaning.yaml` | Applications, components, versions, builds, environments and feature flags; APIs and endpoints; repositories, commits, log entries and user accounts |
 | `statistics.meaning.yaml` | per-capita (a pattern for ratios) |
 
 ## Three connected demonstrations

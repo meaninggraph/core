@@ -1,0 +1,660 @@
+format: meaning/draft-1
+id: operations
+name: IT operations
+description: >-
+  Running a service after it is built: support tickets, incidents, problems,
+  changes, service levels and the response around them.
+license: CC0-1.0
+concepts:
+  - id: support-tier
+    kind: entity
+    labels:
+      en: Support tier
+    synonyms:
+      en: [support level, line of support]
+    description: >-
+      The depth of a support response. Level 1 takes the report, applies a
+      known fix or a runbook, and passes on what it cannot close. Level 2
+      investigates further, often the people who operate the application.
+      Level 3 is specialist depth: a change to the software, a vendor, or
+      the team that builds it. Organizations draw those boundaries
+      differently, and some add another tier, so the three levels are the
+      usual case rather than a closed list. A tier is not an on-call
+      rotation, which says who is reachable now, and not a priority, which
+      says how soon a ticket should be worked.
+
+  - id: support-ticket
+    kind: entity
+    labels:
+      en: Support ticket
+    synonyms:
+      en: [ticket, support case]
+    description: >-
+      A tracked request for attention from the people who operate a service.
+      An incident and a service request are kinds of support ticket. A
+      problem is not one: it follows a cause across incidents rather than
+      one report. A ticket is not a work item on a delivery backlog, though
+      repairing the cause may add one.
+
+  - id: support-ticket-assignee
+    kind: attribute
+    of: support-ticket
+    labels:
+      en: Support ticket assignee
+    description: A person currently responsible for the ticket.
+    values-of: person
+
+  - id: support-ticket-assignee-team
+    kind: attribute
+    of: support-ticket
+    labels:
+      en: Support ticket assignee team
+    description: A team currently responsible for the ticket.
+    values-of: team
+
+  - id: support-ticket-tier
+    kind: attribute
+    of: support-ticket
+    labels:
+      en: Support ticket tier
+    description: >-
+      The support tier currently responsible for the ticket. An escalation
+      moves the ticket from one tier to another. The tier is not the
+      ticket's priority.
+    values-of: support-tier
+
+  - id: incident
+    kind: entity
+    extends: support-ticket
+    labels:
+      en: Incident
+    synonyms:
+      en: [service incident, production incident]
+    description: >-
+      An unplanned interruption to a service, or a drop in its quality,
+      recorded so the service can be restored. The incident is that harm and
+      the work to undo it. A problem is the cause, which may lie behind
+      several incidents and can stay open after the service is back. A
+      service request asks for something the service already offers in the
+      ordinary course; nothing has to have failed. A bug is a flaw recorded
+      as delivery work and may never reach a running service, while an
+      incident can also come from configuration, capacity or a dependency. A
+      change request proposes a modification; it does not record a break.
+
+  - id: incident-severity
+    kind: attribute
+    of: incident
+    labels:
+      en: Incident severity
+    description: >-
+      How badly the service is impaired for the people who use it,
+      independent of how soon someone will work the incident. The grading
+      scheme belongs to the organization, and a low number is not
+      universally the worst grade. Severity is not priority. Priority is the
+      order of work and can diverge when urgency differs: a severe fault in
+      a service with no users until morning is not the same queue position
+      as a moderate fault that blocks today's payroll.
+
+  - id: incident-priority
+    kind: attribute
+    of: incident
+    labels:
+      en: Incident priority
+    description: >-
+      The order in which responders work this incident. Practices often
+      suggest it from impact and urgency, and a person can override that
+      suggestion. The attribute stores the resulting order, not the impact
+      and not the urgency. It is not severity, which grades the impairment,
+      and it is not the support tier that holds the ticket.
+
+  - id: incident-status
+    kind: attribute
+    of: incident
+    labels:
+      en: Incident status
+    description: >-
+      Where this incident sits between being recorded and being closed.
+      Practices often distinguish open, restored and resolved, but the names
+      belong to the practice. Status is not severity. Resolved, on the
+      record, can differ from restored, on the service.
+
+  - id: incident-affected-service
+    kind: attribute
+    of: incident
+    labels:
+      en: Incident affected service
+    description: >-
+      The service whose quality is interrupted or reduced. A failing
+      software component may be what broke the service; the service is still
+      what the users were promised.
+    values-of: service
+
+  - id: incident-opened-at
+    kind: attribute
+    of: incident
+    labels:
+      en: Incident opened at
+    description: >-
+      The instant the incident was recorded. The service may have failed
+      earlier. This instant is not when the service was restored and not
+      when a person acknowledged an alert.
+
+  - id: incident-resolved-at
+    kind: attribute
+    of: incident
+    labels:
+      en: Incident resolved at
+    description: >-
+      The instant the incident record was marked resolved, often because a
+      workaround or a fix is in place. That can be earlier or later than the
+      instant the service was restored.
+
+  - id: incident-restored-at
+    kind: attribute
+    of: incident
+    labels:
+      en: Incident restored at
+    description: >-
+      The instant the service met its success criterion again. Mean time to
+      restore uses this instant, not the resolved time of the record and not
+      the time an alert was acknowledged.
+
+  - id: incident-related-bug
+    kind: attribute
+    of: incident
+    labels:
+      en: Incident related bug
+    description: >-
+      A bug recorded as a cause of this incident, when the harm comes from a
+      software flaw. The attribute is absent when the cause is something
+      else. Linking the two does not make the incident a bug or the bug an
+      incident.
+    values-of: bug
+
+  - id: service-request
+    kind: entity
+    extends: support-ticket
+    labels:
+      en: Service request
+    synonyms:
+      en: [request for service, service catalog request]
+    description: >-
+      A request that a service do something it already offers as a normal
+      part of running, such as granting access or supplying information.
+      Nothing has failed, so a service request is not an incident. It is not
+      a change request either: a change request proposes a modification that
+      can affect the service. Some service requests are fulfilled by a
+      change that was already approved for that kind of request.
+
+  - id: problem
+    kind: entity
+    labels:
+      en: Problem
+    synonyms:
+      en: [problem record]
+    description: >-
+      The cause, or the suspected cause, of one or more incidents. The work
+      is to understand that cause and to make a repeat less likely.
+      Restoring the service belongs to the incident and can finish while the
+      problem stays open. A problem is not a change request; a change is one
+      way the cause might be removed. Once the cause and a workaround are
+      documented, the problem is a known error, which is still this cause
+      and not a new kind of event.
+
+  - id: problem-root-cause
+    kind: attribute
+    of: problem
+    labels:
+      en: Problem root cause
+    synonyms:
+      en: [root cause]
+    description: >-
+      The cause the investigation has settled on. Until it is recorded, the
+      problem is not a known error. The cause is not the workaround that
+      avoids its effect.
+
+  - id: problem-related-incident
+    kind: attribute
+    of: problem
+    labels:
+      en: Problem related incident
+    description: >-
+      An incident this problem is taken to explain. One problem can sit
+      behind several incidents. The incident remains the record of restoring
+      the service.
+    values-of: incident
+
+  - id: known-error
+    kind: entity
+    extends: problem
+    labels:
+      en: Known error
+    synonyms:
+      en: [known error record]
+    description: >-
+      A problem whose cause is documented and for which a workaround is
+      known. The name records how far diagnosis has got. The cause can
+      still be in the service, so a known error is not a completed fix, not
+      an incident, and not a runbook. A runbook may tell a responder to
+      apply the workaround.
+
+  - id: known-error-workaround
+    kind: attribute
+    of: known-error
+    labels:
+      en: Known error workaround
+    synonyms:
+      en: [workaround]
+    description: >-
+      A way to reduce or avoid the effect of a known error without removing
+      its cause. It is not the root cause. A runbook may quote it; the
+      workaround is not itself the runbook.
+
+  - id: change-request
+    kind: entity
+    labels:
+      en: Change request
+    synonyms:
+      en: [request for change, change record]
+    description: >-
+      A proposal to add, modify or remove something that can affect a
+      service, recorded so the risk can be judged before the change is made.
+      It does not restore a service, so it is not an incident, and it is not
+      itself a cause, so it is not a problem. It is not a release and not a
+      deployment. A release names a version made available. A deployment puts
+      a build into an environment, which is one way a change is carried out.
+      A service request can be fulfilled by a change that was pre-approved;
+      the request and the change record stay different facts.
+
+  - id: change-request-risk
+    kind: attribute
+    of: change-request
+    labels:
+      en: Change request risk
+    description: >-
+      The assessed chance that this change harms the service, and how bad
+      that harm would be, used to choose how the change is approved. It is
+      not incident severity and not bug severity.
+
+  - id: change-request-problem
+    kind: attribute
+    of: change-request
+    labels:
+      en: Change request problem
+    description: >-
+      A problem this change is intended to remove or reduce. The change
+      request remains a proposal; accepting it is not the same as closing
+      the problem.
+    values-of: problem
+
+  - id: escalation
+    kind: entity
+    extends: event
+    labels:
+      en: Escalation
+    synonyms:
+      en: [support escalation]
+    description: >-
+      An occurrence in the handling of a support ticket: the ticket is
+      handed to a deeper support tier or to another team, or a manager is
+      notified. It is an event because it happens at a time; it is not a
+      planned gathering. An escalation is not a change of priority and not a
+      change request. Moving from level 1 to level 2 is an escalation; so is
+      moving to level 3. The tiers are support tiers, not priorities.
+
+  - id: escalation-support-ticket
+    kind: attribute
+    of: escalation
+    labels:
+      en: Escalation support ticket
+    description: The support ticket being handed on.
+    values-of: support-ticket
+
+  - id: escalation-from-tier
+    kind: attribute
+    of: escalation
+    labels:
+      en: Escalation from tier
+    description: >-
+      The support tier that hands the ticket on, when the escalation is from
+      one tier to another.
+    values-of: support-tier
+
+  - id: escalation-to-tier
+    kind: attribute
+    of: escalation
+    labels:
+      en: Escalation to tier
+    description: >-
+      The support tier that receives the ticket. A notice to a manager may
+      name a person instead of a tier; that person is not a support tier.
+    values-of: support-tier
+
+  - id: on-call-rotation
+    kind: entity
+    labels:
+      en: On-call rotation
+    synonyms:
+      en: [on-call schedule, pager rotation]
+    description: >-
+      The schedule of people responsible for answering alerts outside
+      ordinary staffing. Any support tier can be on call, so the rotation is
+      not a tier. It is not an alert and not an incident: it says who
+      responds, not what failed.
+
+  - id: on-call-rotation-team
+    kind: attribute
+    of: on-call-rotation
+    labels:
+      en: On-call rotation team
+    description: The team whose members take turns on the rotation.
+    values-of: team
+
+  - id: on-call-rotation-participant
+    kind: attribute
+    of: on-call-rotation
+    labels:
+      en: On-call rotation participant
+    description: >-
+      A person who takes a turn on the rotation. Not every member of the
+      team is on the rotation.
+    values-of: person
+
+  - id: alert
+    kind: entity
+    extends: observation
+    labels:
+      en: Alert
+    synonyms:
+      en: [monitoring alert]
+    description: >-
+      An observation that a stated condition was met and that a person may
+      need to act. It does not by itself establish the cause, the severity,
+      or that an incident has occurred: several alerts can be one incident,
+      and an alert can be a false signal. An alert is not a log entry. A log
+      entry is a line the software wrote; an alert may be raised because of
+      log entries.
+
+  - id: alert-affected-service
+    kind: attribute
+    of: alert
+    labels:
+      en: Alert affected service
+    description: The service whose condition the alert is about.
+    values-of: service
+
+  - id: alert-acknowledged-at
+    kind: attribute
+    of: alert
+    labels:
+      en: Alert acknowledged at
+    description: >-
+      The instant a person accepts responsibility for the alert. Mean time
+      to acknowledge ends at this instant. Acknowledgement is not
+      restoration of the service.
+
+  - id: runbook
+    kind: entity
+    extends: document
+    labels:
+      en: Runbook
+    synonyms:
+      en: [operations runbook]
+    description: >-
+      A document of steps for operating a service or for handling a known
+      situation, written so a responder can follow it under pressure. It is
+      not a postmortem, which records an incident after the fact, and not a
+      known error, which records a cause and a workaround. The runbook may
+      tell the reader to apply a workaround.
+
+  - id: runbook-service
+    kind: attribute
+    of: runbook
+    labels:
+      en: Runbook service
+    description: The service whose operation this runbook describes.
+    values-of: service
+
+  - id: postmortem
+    kind: entity
+    extends: document
+    labels:
+      en: Postmortem
+    synonyms:
+      en: [post-mortem, post-incident review, incident review]
+    description: >-
+      A document written after an incident, once the service is restored,
+      recording what happened, how the service was restored, what
+      contributed, and what will change. It is not the incident record, not
+      the problem record, and not a runbook. A meeting about how a sprint
+      went is a different practice and is not this document.
+
+  - id: postmortem-incident
+    kind: attribute
+    of: postmortem
+    labels:
+      en: Postmortem incident
+    description: >-
+      The incident this document reviews. Writing the document does not
+      reopen or replace the incident.
+    values-of: incident
+
+  - id: service-level-agreement
+    kind: entity
+    extends: contract
+    labels:
+      en: Service level agreement
+    synonyms:
+      en: [SLA, service-level agreement]
+    description: >-
+      An agreement between a service provider and a customer that names a
+      service and the targets the provider commits to. It is a contract. It
+      is not the target figure and not the measurement of the service. Those
+      are the service level objective and the service level indicator. A
+      target with no customer agreement is an objective, not an agreement.
+
+  - id: service-level-agreement-service
+    kind: attribute
+    of: service-level-agreement
+    labels:
+      en: Service level agreement service
+    description: A service whose targets this agreement commits to.
+    values-of: service
+
+  - id: service-level-objective
+    kind: entity
+    labels:
+      en: Service level objective
+    synonyms:
+      en: [SLO, service-level objective]
+    description: >-
+      A target for a service level over a stated window, such as a
+      proportion of valid requests that must succeed. It is the number the
+      service is aimed at. It is not the agreement that may promise that
+      number, and not the measurement that shows whether the number was hit.
+      An objective can exist with no service level agreement. The
+      unreliability the target still counts as acceptable is the error
+      budget.
+
+  - id: service-level-objective-target
+    kind: attribute
+    of: service-level-objective
+    labels:
+      en: Service level objective target
+    description: >-
+      The target value, such as a proportion of successes or a duration,
+      over the objective's window. It is not the measured value. The service
+      level indicator defines that measurement.
+
+  - id: service-level-objective-indicator
+    kind: attribute
+    of: service-level-objective
+    labels:
+      en: Service level objective indicator
+    description: >-
+      The service level indicator this objective sets a target against. The
+      indicator is the measurement; the objective is the target.
+    values-of: service-level-indicator
+
+  - id: service-level-objective-agreement
+    kind: attribute
+    of: service-level-objective
+    labels:
+      en: Service level objective agreement
+    description: >-
+      A service level agreement that commits to this objective, when a
+      customer is promised it. An internal objective can leave this empty.
+    values-of: service-level-agreement
+
+  - id: service-level-indicator
+    kind: entity
+    labels:
+      en: Service level indicator
+    synonyms:
+      en: [SLI, service-level indicator]
+    description: >-
+      A defined measurement of a service's behavior, such as the proportion
+      of valid requests that succeed or the proportion of time the service
+      is up. An objective sets a target on an indicator. The indicator is
+      not that target and not the agreement. Availability is one common
+      indicator; latency and error rate are others. A key performance
+      indicator judges a business activity and is not, by that name, a
+      service level indicator.
+
+  - id: service-level-indicator-service
+    kind: attribute
+    of: service-level-indicator
+    labels:
+      en: Service level indicator service
+    description: The service whose behavior this indicator measures.
+    values-of: service
+
+  - id: availability
+    kind: measure
+    of: service
+    labels:
+      en: Availability
+    synonyms:
+      en: [service availability]
+    description: >-
+      The proportion of a stated window in which a service met its success
+      criterion. Counted by time, it is uptime divided by the length of the
+      window. Counted by requests, it is successful requests divided by
+      valid requests. Those two proportions answer different questions.
+      Uptime is only the time-based reading, so it is not another name for
+      every availability figure. Availability is a measurement. It is not a
+      service level objective, which is the target, and not a service level
+      agreement.
+    unit: proportion
+    measure:
+      formula: >-
+        Successful time divided by the length of the window, or successful
+        requests divided by valid requests in the window, as the service
+        level indicator defines success. Recomputed for the window.
+      aggregation: none
+
+  - id: error-budget
+    kind: measure
+    of: service-level-objective
+    labels:
+      en: Error budget
+    description: >-
+      The quantity of unreliability a service level objective allows in its
+      window: the share the objective does not promise. For a success-rate
+      target that quantity is one minus the target, applied to the valid
+      requests or the time in the window. When the service level indicator
+      has recorded that much failure, the budget is spent. The budget is not
+      a second objective and not availability. What remains of the budget is
+      this allowance minus what has already been consumed; the remainder is
+      a reading of the budget, and this measure is the allowance.
+    measure:
+      formula: >-
+        One minus the objective's success target, applied to the stated
+        window, giving the failed requests allowed or the downtime allowed.
+        Recomputed for the window.
+      aggregation: none
+
+  - id: sla-compliance-rate
+    kind: measure
+    of: service-level-agreement
+    labels:
+      en: SLA compliance rate
+    description: >-
+      The proportion of the targets in a service level agreement that were
+      met in a stated window. It is not availability, which measures one
+      aspect of a service, and not an error budget, which is how much
+      failure one objective allows. The rate does not say which missed
+      target, if any, carries a contractual consequence.
+    unit: proportion
+    measure:
+      formula: >-
+        The number of agreed service level targets met in the window,
+        divided by the number of agreed targets that applied in the window.
+        Recomputed for the window.
+      aggregation: none
+
+  - id: mean-time-to-restore
+    kind: measure
+    labels:
+      en: Mean time to restore
+    synonyms:
+      en: [MTTR]
+    description: >-
+      The arithmetic mean, over failures in a stated window, of the time
+      from each failure until the service is restored. Restored means the
+      service meets its success criterion again, the incident's restored
+      time. That can differ from the time the incident record is marked
+      resolved and from the time a person acknowledges an alert. The
+      abbreviation MTTR is also used for mean time to repair and for mean
+      time to resolve. Those intervals are not this one. DORA's recovery
+      metric is a median time to recover from a failed deployment, reported
+      as failed deployment recovery time, and is not this mean.
+    measure:
+      formula: >-
+        The sum of the restore durations of the failures in the window,
+        divided by the number of those failures. Each duration runs from the
+        failure until the service is restored.
+      aggregation: none
+
+  - id: mean-time-to-acknowledge
+    kind: measure
+    labels:
+      en: Mean time to acknowledge
+    synonyms:
+      en: [MTTA]
+    description: >-
+      The arithmetic mean, over alerts in a stated window, of the time from
+      an alert until a person acknowledges it. Acknowledgement means someone
+      accepts the alert; it is not restoration and not resolution of an
+      incident. This mean is not mean time to restore, and it is not one of
+      the four DORA delivery metrics.
+    measure:
+      formula: >-
+        The sum of the times from each alert in the window until a person
+        acknowledges it, divided by the number of those alerts.
+      aggregation: none
+
+  - id: failed-deployment-recovery-time
+    kind: measure
+    labels:
+      en: Failed deployment recovery time
+    synonyms:
+      en: [time to restore service]
+    description: >-
+      How long service takes to recover after a failure in production. This
+      is the fourth of the four DORA software delivery metrics, with
+      deployment frequency, lead time for changes and change failure rate.
+      It was published as time to restore service, the time to recover from
+      a production failure, and later named failed deployment recovery time,
+      tying the clock to a deployment that failed. The published summary is
+      a median of those durations, not the arithmetic mean. The mean is mean
+      time to restore, which shares the abbreviation MTTR and is a different
+      summary of a related interval. Neither is the time to acknowledge an
+      alert.
+    measure:
+      formula: >-
+        The median, over production failures in the window, of the elapsed
+        time from the failure until the service is restored. When the
+        practice restricts the window to failures caused by a deployment,
+        only those failures enter the median.
+      aggregation: none
