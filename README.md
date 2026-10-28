@@ -27,6 +27,12 @@ columns to them.
 | `software.meaning.yaml` | Applications, components, versions, builds, environments and feature flags; APIs and endpoints; repositories, commits, log entries and user accounts |
 | `statistics.meaning.yaml` | per-capita (a pattern for ratios) |
 
+## Watch
+
+<a href="https://youtu.be/FQKSkWI0qDM"><img src="https://meaninggraph.io/images/intro-film-poster.jpg" alt="MeaningGraph.I/O — What a number means: watch the intro film (1:43)" width="560"></a>
+
+▶ **[What a number means — the MeaningGraph.I/O intro film (1:43)](https://youtu.be/FQKSkWI0qDM)**
+
 ## Three connected demonstrations
 
 [`examples/connected-demonstrations.json`](examples/connected-demonstrations.json)
