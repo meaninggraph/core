@@ -14,11 +14,12 @@ after(() => rmSync(scratch, { recursive: true, force: true }));
 const fixture = JSON.parse(readFileSync(join(root, 'scripts/fixtures/effective-fields.modelspec.json'), 'utf8'));
 const fixtureHcl = readFileSync(join(root, 'scripts/fixtures/effective-fields.modelspec.hcl'), 'utf8');
 const source = (records = {}, components = {}, module = 'm') => ({ modelspec: '1.0-draft-2', module: { id: module, name: module, version: '1' }, components, records });
-const binding = (draft, record, field, role, module = 'm') => ({ model: `modelspec:///${module}.${record}`, ...(field === undefined ? {} : { [draft === 1 ? 'property' : 'field']: field }), role: draft === 1 ? ({ instances: 'entity', reference: 'foreign-key' }[role] ?? role) : role });
-const concept = (draft, id, kind, bindings, extra = {}) => ({ id, kind: draft === 1 && kind === 'property' ? 'attribute' : kind, labels: { en: id }, description: `${id}.`, ...extra, bindings });
+// `draft` is kept in the helpers' signatures from when both formats were tested; meaning/draft-2 is the only one.
+const binding = (_draft, record, field, role, module = 'm') => ({ model: `modelspec:///${module}.${record}`, ...(field === undefined ? {} : { field }), role });
+const concept = (_draft, id, kind, bindings, extra = {}) => ({ id, kind, labels: { en: id }, description: `${id}.`, ...extra, bindings });
 const document = (draft, concepts) => ({ format: `meaning/draft-${draft}`, id: 'fixture', name: 'Fixture', description: 'Effective field proof.', license: 'CC0-1.0', models: { m: 'model/m.modelspec.hcl' }, concepts });
 const localFor = (doc) => indexConcepts([{ path: join(scratch, 'fixture.meaning.yaml'), doc }], 'github.com/example/semantic');
-const report = (doc, models, derive = false) => checkMeaningReport({ local: localFor(doc), models, derive, schemaPath: join(root, 'meaning.schema.json'), selfRepo: 'github.com/example/semantic', resolve: () => ({ error: 'unexpected foreign meaning dependency' }) });
+const report = (doc, models, derive = false) => checkMeaningReport({ local: localFor(doc), models, derive, schemaPath: join(root, 'meaning.draft-2.schema.json'), selfRepo: 'github.com/example/semantic', resolve: () => ({ error: 'unexpected foreign meaning dependency' }) });
 const messages = (result) => result.problems.map((finding) => `${finding.rule}: ${finding.message}`).join('\n');
 const baseConcepts = (draft) => [
   concept(draft, 'thing', 'entity', [binding(draft, 'Thing', undefined, 'instances'), binding(draft, 'Thing', 'id', 'identifier'), binding(draft, 'Thing', 'Name', 'display-name')]),
@@ -26,7 +27,7 @@ const baseConcepts = (draft) => [
   concept(draft, 'target-ref', 'property', [binding(draft, 'Thing', 'target', 'reference')], { of: 'thing', 'values-of': 'target' }),
 ];
 
-for (const draft of [1, 2]) test(`effective fields: canonical Go-approved inherited keys/type/reference roles and derivation, draft ${draft}`, () => {
+for (const draft of [2]) test(`effective fields: canonical Go-approved inherited keys/type/reference roles and derivation, draft ${draft}`, () => {
   const models = { m: structuredClone(fixture) };
   const before = JSON.stringify(models);
   const doc = document(draft, baseConcepts(draft));
@@ -40,7 +41,7 @@ for (const draft of [1, 2]) test(`effective fields: canonical Go-approved inheri
   const dir = join(scratch, `loader-${draft}`); mkdirSync(join(dir, 'model'), { recursive: true });
   writeFileSync(join(dir, 'model/m.modelspec.hcl'), fixtureHcl);
   const local = indexConcepts([{ path: join(dir, 'fixture.meaning.yaml'), doc }], 'github.com/example/semantic');
-  assert.deepEqual(checkMeaningReport({ local, derive: true, schemaPath: join(root, 'meaning.schema.json'), resolve: () => ({ error: 'unexpected' }) }).problems, []);
+  assert.deepEqual(checkMeaningReport({ local, derive: true, schemaPath: join(root, 'meaning.draft-2.schema.json'), resolve: () => ({ error: 'unexpected' }) }).problems, []);
 });
 
 test('effective fields: own overrides, repeat origins, alias origins, ambiguity and nested values', () => {
@@ -61,7 +62,7 @@ test('effective fields: own overrides, repeat origins, alias origins, ambiguity 
   assert.ok(!messages(result).includes('has no property Name'));
 });
 
-for (const draft of [1, 2]) test(`effective fields: unavailable uses retain own proofs and refuse unknown or complete proofs, draft ${draft}`, () => {
+for (const draft of [2]) test(`effective fields: unavailable uses retain own proofs and refuse unknown or complete proofs, draft ${draft}`, () => {
   const models = { m: source({ Thing: { use: ['Foreign.Common'], key: ['id'], fields: { id: { type: 'int' }, Name: { type: 'string' } } } }) };
   const doc = document(draft, [baseConcepts(draft)[0]]);
   assert.deepEqual(report(doc, models).problems, [], 'known own fields remain usable');
@@ -82,7 +83,7 @@ for (const draft of [1, 2]) test(`effective fields: unavailable uses retain own 
 test('effective fields: originating model vocabulary and exact explicit/self aliases govern reference proofs', () => {
   const common = { modelspec: '1.0-draft', module: { name: 'Canonical' }, components: { Common: { fields: { target: { entity: 'Canonical.Target' }, Name: { type: 'string' } } } }, entities: { Target: { key: ['id'], properties: { id: { type: 'int' } } } } };
   const models = { m: source({ Thing: { use: ['c.Common'] }, Target: {} }), c: common };
-  for (const draft of [1, 2]) {
+  for (const draft of [2]) {
     const doc = document(draft, [
       concept(draft, 'thing', 'entity', [binding(draft, 'Thing', undefined, 'instances'), binding(draft, 'Thing', 'Name', 'display-name')]),
       concept(draft, 'target', 'entity', [binding(draft, 'Target', undefined, 'instances', 'c')]),
@@ -97,7 +98,7 @@ test('effective fields: originating model vocabulary and exact explicit/self ali
 });
 
 test('effective fields: reference role/type constraints are unchanged for inherited fields', () => {
-  for (const draft of [1, 2]) {
+  for (const draft of [2]) {
     const doc = document(draft, baseConcepts(draft));
     doc.concepts[2].bindings[0] = binding(draft, 'Thing', 'target', 'value');
     assert.match(messages(report(doc, { m: fixture })), /is a reference to m.Target; bind it with role reference/);
@@ -166,7 +167,7 @@ test('effective fields: reference proofs preserve each meaning file model source
     const target = document(2, [concept(2, 'target', 'entity', [binding(2, 'Target', undefined, 'instances')])]);
     target.models = { m: sameSource ? 'shared.modelspec.hcl' : 'other.modelspec.hcl' };
     const local = indexConcepts([{ path: join(dir, 'a.meaning.yaml'), doc: owner }, { path: join(dir, 'b.meaning.yaml'), doc: target }], 'github.com/example/semantic');
-    const result = checkMeaningReport({ local, schemaPath: join(root, 'meaning.schema.json'), resolve: () => ({ error: 'unexpected' }) });
+    const result = checkMeaningReport({ local, schemaPath: join(root, 'meaning.draft-2.schema.json'), resolve: () => ({ error: 'unexpected' }) });
     if (sameSource) assert.deepEqual(result.problems, []);
     else assert.ok(result.problems.some((problem) => problem.rule === 'binding-role'), 'a shared alias spelling cannot prove that two distinct source models are the same record');
   }
@@ -198,7 +199,7 @@ const assertCapability = (doc, models) => {
   assert.equal(JSON.stringify(models), before);
 };
 
-for (const draft of [1, 2]) test(`effective fields: required derived model/field identities fit the unchanged binding grammar, draft ${draft}`, () => {
+for (const draft of [2]) test(`effective fields: required derived model/field identities fit the unchanged binding grammar, draft ${draft}`, () => {
   const doc = document(draft, [concept(draft, 'target', 'entity', [binding(draft, 'Target', undefined, 'instances')])]);
   for (const name of ['Order-Line', '_Record', 'Thing?ref=abc']) {
     const model = structuredClone(grammarFixture);
@@ -234,7 +235,7 @@ test('effective fields: capability text is bounded in UTF-8 before assembly, inc
     byteBound(diagnosticText(text), modelDiagnosticBytes);
     byteBound(modelMessage`prefix ${text} middle ${text} suffix`, modelMessageBytes);
     const models = { m: source({ Target: { use: ['Foreign.Common'] } }) };
-    for (const draft of [1, 2]) {
+    for (const draft of [2]) {
       const doc = document(draft, [concept(draft, 'target', 'entity', [binding(draft, 'Target', undefined, 'instances'), binding(draft, 'Target', text, 'display-name')])]);
       const checked = report(doc, models);
       assert.ok(checked.problems.some((problem) => problem.rule === 'model-capability'));

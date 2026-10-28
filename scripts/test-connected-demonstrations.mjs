@@ -7,10 +7,10 @@ const concepts=new Map(fs.readdirSync(new URL('..',import.meta.url)).filter(p=>p
 const expected='team organizational-unit contact-point place address time-zone product service payment payment-obligation financial-account contract asset shipment project task event reservation document observation'.split(' ');
 function validate(d){
  const records=new Map();
- for(const r of d.records){assert(!records.has(r.id),'duplicate record');records.set(r.id,r);assert.equal(concepts.get(r.entity)?.kind,'entity','record entity');}
+ for(const r of d.records){assert(!records.has(r.id),'duplicate record');records.set(r.id,r);assert(['entity','value-set'].includes(concepts.get(r.entity)?.kind),'record entity');}
  for(const e of expected)assert(d.records.some(r=>r.entity===e),`missing ${e}`);
  for(const r of d.records)for(const [id,v]of Object.entries(r.properties)){
-  const c=concepts.get(id);assert(c,`unknown property ${id}`);assert.equal(c.kind,'attribute');assert.equal(c.of,r.entity,`property owner ${id}`);
+  const c=concepts.get(id);assert(c,`unknown property ${id}`);assert.equal(c.kind,'property');assert.equal(c.of,r.entity,`property owner ${id}`);
   if(c['values-of']){assert(v&&typeof v==='object'&&Object.keys(v).length===1&&typeof v.ref==='string',`typed reference ${id}`);const target=records.get(v.ref);assert(target,`unresolved reference ${v.ref}`);assert.equal(target.entity,c['values-of'],`reference type ${id}`);}
   else {assert(['string','number','boolean'].includes(typeof v),`example scalar ${id}`);if(c.extends==='money-amount')assert(Number.isFinite(v)&&v>=0,`money ${id}`);}
  }

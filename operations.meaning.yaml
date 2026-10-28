@@ -1,4 +1,4 @@
-format: meaning/draft-1
+format: meaning/draft-2
 id: operations
 name: IT operations
 description: >-
@@ -24,7 +24,7 @@ concepts:
       says how soon a ticket should be worked.
 
   - id: support-tier-name
-    kind: attribute
+    kind: property
     of: support-tier
     labels:
       en: Support tier name
@@ -46,7 +46,7 @@ concepts:
       repairing the cause may add one.
 
   - id: support-ticket-assignee
-    kind: attribute
+    kind: property
     of: support-ticket
     labels:
       en: Support ticket assignee
@@ -54,7 +54,7 @@ concepts:
     values-of: person
 
   - id: support-ticket-assignee-team
-    kind: attribute
+    kind: property
     of: support-ticket
     labels:
       en: Support ticket assignee team
@@ -62,7 +62,7 @@ concepts:
     values-of: team
 
   - id: support-ticket-tier
-    kind: attribute
+    kind: property
     of: support-ticket
     labels:
       en: Support ticket tier
@@ -92,7 +92,7 @@ concepts:
       what restores the service; the request is still not the incident.
 
   - id: incident-severity
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident severity
@@ -108,7 +108,7 @@ concepts:
       as that order.
 
   - id: incident-impact
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident impact
@@ -119,7 +119,7 @@ concepts:
       align the grade and the effect, and the two can still differ.
 
   - id: incident-urgency
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident urgency
@@ -131,7 +131,7 @@ concepts:
       chosen, including when a person overrides that suggestion.
 
   - id: incident-priority
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident priority
@@ -143,7 +143,7 @@ concepts:
       not the support tier that holds the ticket.
 
   - id: incident-status
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident status
@@ -154,7 +154,7 @@ concepts:
       record, can differ from restored, on the service.
 
   - id: incident-affected-service
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident affected service
@@ -165,7 +165,7 @@ concepts:
     values-of: service
 
   - id: incident-opened-at
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident opened at
@@ -176,7 +176,7 @@ concepts:
       person acknowledged an alert.
 
   - id: incident-resolved-at
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident resolved at
@@ -186,7 +186,7 @@ concepts:
       instant the service was restored.
 
   - id: incident-restored-at
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident restored at
@@ -196,7 +196,7 @@ concepts:
       and not at the time an alert was acknowledged.
 
   - id: incident-failure-at
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident failure at
@@ -207,7 +207,7 @@ concepts:
       time and not from acknowledgement of an alert.
 
   - id: incident-workaround
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident workaround
@@ -218,7 +218,7 @@ concepts:
       permanent removal of the cause.
 
   - id: incident-related-bug
-    kind: attribute
+    kind: property
     of: incident
     labels:
       en: Incident related bug
@@ -262,7 +262,7 @@ concepts:
       what makes it one. A workaround can be recorded earlier.
 
   - id: problem-root-cause
-    kind: attribute
+    kind: property
     of: problem
     labels:
       en: Problem root cause
@@ -275,7 +275,7 @@ concepts:
       workaround that reduces the effect.
 
   - id: problem-related-incident
-    kind: attribute
+    kind: property
     of: problem
     labels:
       en: Problem related incident
@@ -302,7 +302,7 @@ concepts:
       incidents. A runbook may tell a responder to apply a workaround.
 
   - id: problem-workaround
-    kind: attribute
+    kind: property
     of: problem
     labels:
       en: Problem workaround
@@ -333,7 +333,7 @@ concepts:
       request and the change stay different records.
 
   - id: change-request-type
-    kind: attribute
+    kind: property
     of: change-request
     labels:
       en: Change request type
@@ -347,7 +347,7 @@ concepts:
       carries the change out.
 
   - id: change-request-risk
-    kind: attribute
+    kind: property
     of: change-request
     labels:
       en: Change request risk
@@ -357,7 +357,7 @@ concepts:
       not incident severity and not bug severity.
 
   - id: change-request-problem
-    kind: attribute
+    kind: property
     of: change-request
     labels:
       en: Change request problem
@@ -383,7 +383,7 @@ concepts:
       support tiers, not priorities.
 
   - id: escalation-support-ticket
-    kind: attribute
+    kind: property
     of: escalation
     labels:
       en: Escalation support ticket
@@ -391,7 +391,7 @@ concepts:
     values-of: support-ticket
 
   - id: escalation-from-tier
-    kind: attribute
+    kind: property
     of: escalation
     labels:
       en: Escalation from tier
@@ -401,7 +401,7 @@ concepts:
     values-of: support-tier
 
   - id: escalation-to-tier
-    kind: attribute
+    kind: property
     of: escalation
     labels:
       en: Escalation to tier
@@ -423,7 +423,7 @@ concepts:
       responds, not what failed.
 
   - id: on-call-rotation-team
-    kind: attribute
+    kind: property
     of: on-call-rotation
     labels:
       en: On-call rotation team
@@ -431,7 +431,7 @@ concepts:
     values-of: team
 
   - id: on-call-rotation-participant
-    kind: attribute
+    kind: property
     of: on-call-rotation
     labels:
       en: On-call rotation participant
@@ -456,7 +456,7 @@ concepts:
       log entries.
 
   - id: alert-affected-service
-    kind: attribute
+    kind: property
     of: alert
     labels:
       en: Alert affected service
@@ -464,7 +464,7 @@ concepts:
     values-of: service
 
   - id: alert-acknowledged-at
-    kind: attribute
+    kind: property
     of: alert
     labels:
       en: Alert acknowledged at
@@ -474,7 +474,7 @@ concepts:
       raised. Acknowledgement is not restoration of the service.
 
   - id: alert-raised-at
-    kind: attribute
+    kind: property
     of: alert
     labels:
       en: Alert raised at
@@ -498,7 +498,7 @@ concepts:
       tell the reader to apply a workaround.
 
   - id: runbook-service
-    kind: attribute
+    kind: property
     of: runbook
     labels:
       en: Runbook service
@@ -520,7 +520,7 @@ concepts:
       went is a different practice and is not this document.
 
   - id: postmortem-incident
-    kind: attribute
+    kind: property
     of: postmortem
     labels:
       en: Postmortem incident
@@ -550,7 +550,7 @@ concepts:
       objective.
 
   - id: service-level-agreement-service
-    kind: attribute
+    kind: property
     of: service-level-agreement
     labels:
       en: Service level agreement service
@@ -558,7 +558,7 @@ concepts:
     values-of: service
 
   - id: service-level-agreement-customer-organization
-    kind: attribute
+    kind: property
     of: service-level-agreement
     labels:
       en: Service level agreement customer organization
@@ -568,7 +568,7 @@ concepts:
     values-of: organization
 
   - id: service-level-agreement-customer-person
-    kind: attribute
+    kind: property
     of: service-level-agreement
     labels:
       en: Service level agreement customer person
@@ -598,7 +598,7 @@ concepts:
       budget.
 
   - id: service-level-objective-target
-    kind: attribute
+    kind: property
     of: service-level-objective
     labels:
       en: Service level objective target
@@ -609,7 +609,7 @@ concepts:
       measured value. The service level indicator defines that measurement.
 
   - id: service-level-objective-indicator
-    kind: attribute
+    kind: property
     of: service-level-objective
     labels:
       en: Service level objective indicator
@@ -619,7 +619,7 @@ concepts:
     values-of: service-level-indicator
 
   - id: service-level-objective-agreement
-    kind: attribute
+    kind: property
     of: service-level-objective
     labels:
       en: Service level objective agreement
@@ -648,7 +648,7 @@ concepts:
       quality without this split; this concept is only the measurement.
 
   - id: service-level-indicator-service
-    kind: attribute
+    kind: property
     of: service-level-indicator
     labels:
       en: Service level indicator service

@@ -1,4 +1,4 @@
-format: meaning/draft-1
+format: meaning/draft-2
 id: identity
 name: People and organizations
 description: People, organizations, and the roles people hold in an organization.
@@ -36,7 +36,7 @@ concepts:
     description: A person employed by an organization.
 
   - id: manager
-    kind: attribute
+    kind: property
     of: employee
     values-of: employee
     labels:

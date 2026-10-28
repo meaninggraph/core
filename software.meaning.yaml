@@ -1,4 +1,4 @@
-format: meaning/draft-1
+format: meaning/draft-2
 id: software
 name: Software
 description: >-
@@ -36,7 +36,7 @@ concepts:
       taken as a whole.
 
   - id: software-component-application
-    kind: attribute
+    kind: property
     of: software-component
     labels:
       en: Software component application
@@ -44,7 +44,7 @@ concepts:
     values-of: software-application
 
   - id: software-component-owner-team
-    kind: attribute
+    kind: property
     of: software-component
     labels:
       en: Software component owner team
@@ -67,7 +67,7 @@ concepts:
       scheme is not part of the identity of this concept.
 
   - id: software-version-number
-    kind: attribute
+    kind: property
     of: software-version
     labels:
       en: Software version number
@@ -78,7 +78,7 @@ concepts:
       application uses. The number is not the release and not the build.
 
   - id: software-version-application
-    kind: attribute
+    kind: property
     of: software-version
     labels:
       en: Software version application
@@ -104,7 +104,7 @@ concepts:
       This concept is the infrastructure used for a purpose.
 
   - id: environment-type
-    kind: attribute
+    kind: property
     of: environment
     labels:
       en: Environment type
@@ -130,7 +130,7 @@ concepts:
       same sources are built again.
 
   - id: build-commit
-    kind: attribute
+    kind: property
     of: build
     labels:
       en: Build commit
@@ -138,7 +138,7 @@ concepts:
     values-of: commit
 
   - id: build-version
-    kind: attribute
+    kind: property
     of: build
     labels:
       en: Build version
@@ -163,7 +163,7 @@ concepts:
       is not a version, not a build, and not an environment.
 
   - id: feature-flag-application
-    kind: attribute
+    kind: property
     of: feature-flag
     labels:
       en: Feature flag application
@@ -171,7 +171,7 @@ concepts:
     values-of: software-application
 
   - id: feature-flag-environment
-    kind: attribute
+    kind: property
     of: feature-flag
     labels:
       en: Feature flag environment
@@ -195,7 +195,7 @@ concepts:
       offers it.
 
   - id: api-software-component
-    kind: attribute
+    kind: property
     of: api
     labels:
       en: API software component
@@ -213,7 +213,7 @@ concepts:
       deployment.
 
   - id: api-endpoint-api
-    kind: attribute
+    kind: property
     of: api-endpoint
     labels:
       en: API endpoint API
@@ -221,7 +221,7 @@ concepts:
     values-of: api
 
   - id: api-endpoint-method
-    kind: attribute
+    kind: property
     of: api-endpoint
     labels:
       en: API endpoint method
@@ -231,7 +231,7 @@ concepts:
       HTTP methods.
 
   - id: api-endpoint-path
-    kind: attribute
+    kind: property
     of: api-endpoint
     labels:
       en: API endpoint path
@@ -253,7 +253,7 @@ concepts:
       it holds may include documents.
 
   - id: repository-application
-    kind: attribute
+    kind: property
     of: repository
     labels:
       en: Repository application
@@ -276,7 +276,7 @@ concepts:
       proposes one or more commits, and it is not a release.
 
   - id: commit-repository
-    kind: attribute
+    kind: property
     of: commit
     labels:
       en: Commit repository
@@ -295,7 +295,7 @@ concepts:
       log entries; the line is not that alert. It is not an incident.
 
   - id: log-entry-level
-    kind: attribute
+    kind: property
     of: log-entry
     labels:
       en: Log entry level
@@ -310,7 +310,7 @@ concepts:
       impairment of a service and not a flaw on the backlog.
 
   - id: log-entry-timestamp
-    kind: attribute
+    kind: property
     of: log-entry
     labels:
       en: Log entry timestamp
@@ -319,7 +319,7 @@ concepts:
       was opened and not the instant an alert was acknowledged.
 
   - id: log-entry-software-component
-    kind: attribute
+    kind: property
     of: log-entry
     labels:
       en: Log entry software component
@@ -339,7 +339,7 @@ concepts:
       not a financial account.
 
   - id: user-account-person
-    kind: attribute
+    kind: property
     of: user-account
     labels:
       en: User account person
@@ -349,7 +349,7 @@ concepts:
     values-of: person
 
   - id: user-account-application
-    kind: attribute
+    kind: property
     of: user-account
     labels:
       en: User account application

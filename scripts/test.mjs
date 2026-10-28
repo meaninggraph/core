@@ -22,7 +22,7 @@ let counter = 0;
 function variant(change = () => {}) {
   const dir = join(scratch, `v${counter++}`);
   mkdirSync(dir);
-  for (const name of ['LICENSE', 'meaning.schema.json', 'meaning.draft-2.schema.json']) copyFileSync(join(root, name), join(dir, name));
+  for (const name of ['LICENSE', 'meaning.draft-2.schema.json']) copyFileSync(join(root, name), join(dir, name));
   const files = Object.fromEntries(rootFiles.map((name) => [name, parseYaml(readFileSync(join(root, name), 'utf8'))]));
   change(files, dir);
   for (const [name, doc] of Object.entries(files)) if (doc) writeFileSync(join(dir, name), stringifyYaml(doc, { lineWidth: 0 }));
@@ -119,7 +119,7 @@ test('orders and invoices remain distinct while their line items share a common 
 test('a file the schema rejects fails', () => {
   assert.match(problemsOf((files) => { delete concept(files, 'country').description; }), /geo.meaning.yaml: schema: \/concepts\/0 must have required property 'description'/);
   assert.match(problemsOf((files) => { concept(files, 'country').kind = 'thing'; }), /schema: \/concepts\/0\/kind must be equal to one of the allowed values/);
-  assert.match(problemsOf((files) => { delete files['geo.meaning.yaml'].format; }), /geo.meaning.yaml: schema: format must be meaning\/draft-1 or meaning\/draft-2/);
+  assert.match(problemsOf((files) => { delete files['geo.meaning.yaml'].format; }), /geo.meaning.yaml: schema: format must be meaning\/draft-2/);
   assert.match(problemsOf((files) => { concept(files, 'country').id = 'Country'; }), /concepts\/0\/id must match pattern/);
 });
 
@@ -152,13 +152,13 @@ test('ids and values must be unique', () => {
 test('the rules of this repository fail: licence, bindings, models, hidden files, shared words', () => {
   assert.match(problemsOf((files) => { files['geo.meaning.yaml'].license = 'MIT'; }), /geo.meaning.yaml: license must be CC0-1.0/);
   assert.match(problemsOf((files) => { delete files['geo.meaning.yaml'].license; }), /geo.meaning.yaml: license must be CC0-1.0/);
-  assert.match(problemsOf((files) => { concept(files, 'country').bindings = [{ model: 'modelspec:///x.Country', role: 'entity' }]; }), /concept country: bindings belong in a dataset repository/);
+  assert.match(problemsOf((files) => { concept(files, 'country').bindings = [{ model: 'modelspec:///x.Country', role: 'instances' }]; }), /concept country: bindings belong in a dataset repository/);
   assert.match(problemsOf((files) => { files['geo.meaning.yaml'].models = { x: 'x.hcl' }; }), /models belong in a dataset repository/);
   assert.match(problemsOf((files) => { concept(files, 'person').synonyms.en.push('people'); concept(files, 'population').synonyms.en.push('people'); }), /concept person: "people" \(en\) is also a word of concept population; one word must name one concept/);
   assert.equal(problemsOf((files) => { concept(files, 'employee').synonyms.en.push('individual'); }), '', 'a kind of a concept may share its parent\'s words');
   assert.equal(problemsOf((files) => { concept(files, 'employee').extends = 'meaning://github.com/meaninggraph/core/person'; concept(files, 'employee').synonyms.en.push('individual'); }), '', 'also when the parent is written with the repository\'s own address');
   assert.match(problemsOf((files) => { concept(files, 'person').synonyms.de = ['Leute']; concept(files, 'population').synonyms.de = ['Leute']; }), /concept person: "Leute" \(de\) is also a word of concept population/, 'a language with synonyms but no label counts');
-  assert.match(problemsOf((files, dir) => { mkdirSync(join(dir, 'more')); writeFileSync(join(dir, 'more', 'extra.meaning.yaml'), 'format: meaning/draft-1\n'); }), /more\/extra.meaning.yaml: meaning files are read from the repository root only/);
+  assert.match(problemsOf((files, dir) => { mkdirSync(join(dir, 'more')); writeFileSync(join(dir, 'more', 'extra.meaning.yaml'), 'format: meaning/draft-2\n'); }), /more\/extra.meaning.yaml: meaning files are read from the repository root only/);
   const none = variant((files) => { for (const name of Object.keys(files)) files[name] = null; });
   assert.match(checkCore(none).problems.join('\n'), /no \*.meaning.yaml file in the repository root/);
 });
@@ -206,18 +206,18 @@ entity "Order" {
 }
 `;
 const shopCurrentHcl = shopHcl.replace(/^entity "/gm, 'record "').replace(/^(\s*)property "/gm, '$1field "').replace(/^(\s*)entity =/gm, '$1record =');
-const binding = (name, property, role) => ({ model: `modelspec:///shop.${name}`, ...(property ? { property } : {}), role });
+const binding = (name, field, role) => ({ model: `modelspec:///shop.${name}`, ...(field ? { field } : {}), role });
 const shopMeaning = (extra = []) => ({
-  format: 'meaning/draft-1',
+  format: 'meaning/draft-2',
   id: 'shop',
   name: 'Shop',
   description: 'A fixture.',
   license: 'CC0-1.0',
   models: { shop: 'shop.modelspec.hcl' },
   concepts: [
-    { id: 'customer', kind: 'entity', labels: { en: 'Customer' }, description: 'A buyer.', bindings: [binding('Customer', null, 'entity'), binding('Customer', 'id', 'identifier'), binding('Customer', 'name', 'display-name')] },
-    { id: 'order', kind: 'entity', labels: { en: 'Order' }, description: 'A purchase.', bindings: [binding('Order', null, 'entity'), binding('Order', 'id', 'identifier')] },
-    { id: 'buyer', kind: 'attribute', of: 'order', 'values-of': 'customer', labels: { en: 'Buyer' }, description: 'Who placed the order.', bindings: [binding('Order', 'customer', 'foreign-key')] },
+    { id: 'customer', kind: 'entity', labels: { en: 'Customer' }, description: 'A buyer.', bindings: [binding('Customer', null, 'instances'), binding('Customer', 'id', 'identifier'), binding('Customer', 'name', 'display-name')] },
+    { id: 'order', kind: 'entity', labels: { en: 'Order' }, description: 'A purchase.', bindings: [binding('Order', null, 'instances'), binding('Order', 'id', 'identifier')] },
+    { id: 'buyer', kind: 'property', of: 'order', 'values-of': 'customer', labels: { en: 'Buyer' }, description: 'Who placed the order.', bindings: [binding('Order', 'customer', 'reference')] },
     ...extra,
   ],
 });
@@ -226,7 +226,7 @@ function shopProblems({ hcl, meaning = shopMeaning(), models }) {
   writeFileSync(join(dir, 'shop.meaning.yaml'), stringifyYaml(meaning, { lineWidth: 0 }));
   writeFileSync(join(dir, 'shop.modelspec.hcl'), hcl);
   const local = loadMeaningDir(dir, shopSelf);
-  return checkMeaning({ local, resolve: createResolver({ root: dir, sources: {} }), schemaPath: join(root, 'meaning.schema.json'), selfRepo: shopSelf, models }).map((problem) => problem.replaceAll(`${dir}/`, ''));
+  return checkMeaning({ local, resolve: createResolver({ root: dir, sources: {} }), schemaPath: join(root, 'meaning.draft-2.schema.json'), selfRepo: shopSelf, models }).map((problem) => problem.replaceAll(`${dir}/`, ''));
 }
 
 test('bindings are checked against a model in the earlier spelling and in the current one alike', () => {
@@ -235,18 +235,18 @@ test('bindings are checked against a model in the earlier spelling and in the cu
   assert.notEqual(shopCurrentHcl, shopHcl);
   const broken = (extra) => shopMeaning(extra);
   const cases = [
-    [[{ id: 'a1', kind: 'attribute', of: 'order', labels: { en: 'A1' }, description: 'x.', bindings: [binding('Order', 'nope', 'value')] }], /modelspec:\/\/\/shop.Order: entity Order has no property nope/],
-    [[{ id: 'a2', kind: 'attribute', of: 'order', labels: { en: 'A2' }, description: 'x.', bindings: [binding('Nope', 'id', 'value')] }], /module shop has no entity Nope/],
-    [[{ id: 'a3', kind: 'attribute', of: 'order', labels: { en: 'A3' }, description: 'x.', bindings: [binding('Order', 'customer', 'value')] }], /Order.customer has role value but is a reference to Customer; bind it with role reference/],
-    [[{ id: 'a4', kind: 'attribute', of: 'order', labels: { en: 'A4' }, description: 'x.', bindings: [binding('Order', 'customer', 'display-name')] }], /Order.customer has role display-name but is a reference to Customer, not a string/],
-    [[{ id: 'a5', kind: 'attribute', of: 'order', 'values-of': 'customer', labels: { en: 'A5' }, description: 'x.', bindings: [binding('Order', 'note', 'foreign-key')] }], /Order.note has role foreign-key but is not a reference \(it is a string\)/],
-    [[{ id: 'a6', kind: 'attribute', of: 'order', labels: { en: 'A6' }, description: 'x.', bindings: [binding('Order', 'note', 'identifier')] }], /Order.note has role identifier but is not in the key of Order \[id\]/],
+    [[{ id: 'a1', kind: 'property', of: 'order', labels: { en: 'A1' }, description: 'x.', bindings: [binding('Order', 'nope', 'value')] }], /modelspec:\/\/\/shop.Order: entity Order has no property nope/],
+    [[{ id: 'a2', kind: 'property', of: 'order', labels: { en: 'A2' }, description: 'x.', bindings: [binding('Nope', 'id', 'value')] }], /module shop has no entity Nope/],
+    [[{ id: 'a3', kind: 'property', of: 'order', labels: { en: 'A3' }, description: 'x.', bindings: [binding('Order', 'customer', 'value')] }], /Order.customer has role value but is a reference to Customer; bind it with role reference/],
+    [[{ id: 'a4', kind: 'property', of: 'order', labels: { en: 'A4' }, description: 'x.', bindings: [binding('Order', 'customer', 'display-name')] }], /Order.customer has role display-name but is a reference to Customer, not a string/],
+    [[{ id: 'a5', kind: 'property', of: 'order', 'values-of': 'customer', labels: { en: 'A5' }, description: 'x.', bindings: [binding('Order', 'note', 'reference')] }], /Order.note has role reference but is not a reference \(it is a string\)/],
+    [[{ id: 'a6', kind: 'property', of: 'order', labels: { en: 'A6' }, description: 'x.', bindings: [binding('Order', 'note', 'identifier')] }], /Order.note has role identifier but is not in the key of Order \[id\]/],
   ];
   for (const [extra, pattern] of cases) {
     for (const hcl of [shopHcl, shopCurrentHcl]) assert.match(shopProblems({ hcl, meaning: broken(extra) }).join('\n'), pattern);
   }
   // A reference that points at another record type than the concept's values are is reported by the record's name.
-  const wrongTarget = [{ id: 'a7', kind: 'attribute', of: 'order', 'values-of': 'order', labels: { en: 'A7' }, description: 'x.', bindings: [binding('Order', 'customer', 'foreign-key')] }];
+  const wrongTarget = [{ id: 'a7', kind: 'property', of: 'order', 'values-of': 'order', labels: { en: 'A7' }, description: 'x.', bindings: [binding('Order', 'customer', 'reference')] }];
   for (const hcl of [shopHcl, shopCurrentHcl]) assert.match(shopProblems({ hcl, meaning: broken(wrongTarget) }).join('\n'), /Order.customer references Customer, but the instances of order are Order rows/);
 });
 
@@ -306,7 +306,7 @@ enum "isPrototypeOf" {
 `;
 };
 const prototypeMeaning = (bindings) => ({
-  format: 'meaning/draft-1',
+  format: 'meaning/draft-2',
   id: 'shop',
   name: 'Shop',
   description: 'A fixture.',
@@ -318,7 +318,7 @@ const prototypeMeaning = (bindings) => ({
 test('a model may declare members named like Object.prototype properties, and a binding finds them only when it declares them', () => {
   for (const spelling of ['earlier', 'current']) {
     const hcl = prototypeHcl(spelling);
-    const declared = [binding('constructor', null, 'entity'), binding('constructor', 'toString', 'identifier'), binding('constructor', '__proto__', 'display-name')];
+    const declared = [binding('constructor', null, 'instances'), binding('constructor', 'toString', 'identifier'), binding('constructor', '__proto__', 'display-name')];
     assert.deepEqual(shopProblems({ hcl, meaning: prototypeMeaning(declared) }), [], spelling);
     const json = toModelspecJson(parseHcl(hcl), { id: 'shop', name: 'shop', version: '1' });
     assert.deepEqual(Object.keys(json[spelling === 'current' ? 'records' : 'entities']), ['constructor', 'valueOf']);
@@ -327,7 +327,7 @@ test('a model may declare members named like Object.prototype properties, and a 
     assert.deepEqual(shopProblems({ hcl, meaning: prototypeMeaning([binding('valueOf', 'hasOwnProperty', 'value')]) }).join('\n').match(/is a reference to constructor; bind it with role reference/)?.length, 1, spelling);
     // Not declared: a binding to the name of an Object.prototype property is refused, as it is for any other missing name.
     const notDeclared = (extra) => shopProblems({ hcl, meaning: prototypeMeaning(extra) }).join('\n');
-    assert.match(notDeclared([binding('toString', null, 'entity')]), /modelspec:\/\/\/shop.toString: module shop has no entity toString/, spelling);
+    assert.match(notDeclared([binding('toString', null, 'instances')]), /modelspec:\/\/\/shop.toString: module shop has no entity toString/, spelling);
     assert.match(notDeclared([binding('constructor', 'valueOf', 'value')]), /entity constructor has no property valueOf/, spelling);
     assert.match(notDeclared([binding('valueOf', 'toString', 'value')]), /entity valueOf has no property toString/, spelling);
   }

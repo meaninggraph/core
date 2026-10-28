@@ -1,4 +1,4 @@
-format: meaning/draft-1
+format: meaning/draft-2
 id: requirements
 name: Requirements
 description: >-
@@ -22,7 +22,7 @@ concepts:
       only one. An employee may be a stakeholder and need not be.
 
   - id: stakeholder-person
-    kind: attribute
+    kind: property
     of: stakeholder
     labels:
       en: Stakeholder person
@@ -32,7 +32,7 @@ concepts:
     values-of: person
 
   - id: stakeholder-organization
-    kind: attribute
+    kind: property
     of: stakeholder
     labels:
       en: Stakeholder organization
@@ -42,7 +42,7 @@ concepts:
     values-of: organization
 
   - id: stakeholder-team
-    kind: attribute
+    kind: property
     of: stakeholder
     labels:
       en: Stakeholder team
@@ -73,7 +73,7 @@ concepts:
       work item, linked from the requirement.
 
   - id: requirement-priority
-    kind: attribute
+    kind: property
     of: requirement
     labels:
       en: Requirement priority
@@ -86,7 +86,7 @@ concepts:
       status.
 
   - id: requirement-source
-    kind: attribute
+    kind: property
     of: requirement
     labels:
       en: Requirement source
@@ -96,7 +96,7 @@ concepts:
     values-of: stakeholder
 
   - id: requirement-status
-    kind: attribute
+    kind: property
     of: requirement
     labels:
       en: Requirement status
@@ -106,7 +106,7 @@ concepts:
       priority.
 
   - id: requirement-work-item
-    kind: attribute
+    kind: property
     of: requirement
     labels:
       en: Requirement work item
@@ -120,7 +120,7 @@ concepts:
     values-of: work-item
 
   - id: requirement-business-rule
-    kind: attribute
+    kind: property
     of: requirement
     labels:
       en: Requirement business rule
@@ -229,7 +229,7 @@ concepts:
       is one session with a system.
 
   - id: use-case-actor
-    kind: attribute
+    kind: property
     of: use-case
     labels:
       en: Use case actor
@@ -243,7 +243,7 @@ concepts:
       not be the only stakeholder of the requirements the use case touches.
 
   - id: use-case-requirement
-    kind: attribute
+    kind: property
     of: use-case
     labels:
       en: Use case requirement
@@ -271,7 +271,7 @@ concepts:
       concept.
 
   - id: acceptance-criterion-user-story
-    kind: attribute
+    kind: property
     of: acceptance-criterion
     labels:
       en: Acceptance criterion user story
@@ -280,7 +280,7 @@ concepts:
     values-of: user-story
 
   - id: acceptance-criterion-requirement
-    kind: attribute
+    kind: property
     of: acceptance-criterion
     labels:
       en: Acceptance criterion requirement
@@ -290,7 +290,7 @@ concepts:
     values-of: requirement
 
   - id: acceptance-criterion-service
-    kind: attribute
+    kind: property
     of: acceptance-criterion
     labels:
       en: Acceptance criterion service
@@ -337,7 +337,7 @@ concepts:
       delivery backlog.
 
   - id: process-step-business-process
-    kind: attribute
+    kind: property
     of: process-step
     labels:
       en: Process step business process
@@ -372,7 +372,7 @@ concepts:
       watch either, and choosing one does not make it the other.
 
   - id: kpi-business-process
-    kind: attribute
+    kind: property
     of: kpi
     labels:
       en: Key performance indicator business process
