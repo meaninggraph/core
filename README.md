@@ -13,6 +13,12 @@ meaning file reuses these concepts by address, for example
 `meaning://github.com/meaninggraph/core/country?ref=<commit>`, and binds its own
 columns to them.
 
+## Watch
+
+<a href="https://youtu.be/FQKSkWI0qDM"><img src="https://meaninggraph.io/images/intro-film-poster.jpg" alt="MeaningGraph.I/O — What a number means: watch the intro film (1:43)" width="560"></a>
+
+▶ **[What a number means — the MeaningGraph.I/O intro film (1:43)](https://youtu.be/FQKSkWI0qDM)**
+
 | File | Concepts |
 |---|---|
 | `geo.meaning.yaml` | country (a starter subset with ISO 3166-1 codes, English and Russian names, aliases such as "USA"), country-code, city, population |
