@@ -1,11 +1,11 @@
-format: meaning/draft-1
+format: meaning/draft-2
 id: calendar
 name: Calendar and time
 description: Time concepts that keep their meaning across representations.
 license: CC0-1.0
 concepts:
   - id: date
-    kind: attribute
+    kind: property
     labels:
       en: Date
       ru: Дата

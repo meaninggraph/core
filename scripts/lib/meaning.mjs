@@ -1,19 +1,12 @@
-// Checks for meaning files (formats meaning/draft-1 and meaning/draft-2; the schemas are
-// meaning.schema.json (draft 1) and meaning.draft-2.schema.json (draft 2) from the pinned
-// meaninggraph/core checkout): JSON Schema validation of each file against the schema of its own
-// format, then the rules a schema cannot express. Every concept reference must resolve;
-// extends joins compatible kinds only, without a cycle; values-of and units-of name entities or
-// value sets (a child may narrow its parent's, never change it); measures are computed from
-// properties and measures and grouped by dimensions and properties; a ratio is never summed;
-// every modelspec:// binding must name an existing record type and field that fits its role
-// (identifier and display-name on the concept's own record type, one instances binding per
-// concept, a reference to the record type of its target concept); and values must cover the
-// data they describe.
-//
-// Both formats are read through one vocabulary (FORMAT.md, "Reading both formats"): the kind
-// attribute is read as property, the binding key property as field, the role entity as
-// instances and the role foreign-key as reference, once a file has been validated against the
-// schema of its own format. The files of one graph must be in one format. Links that the model
+// Checks for meaning files (format meaning/draft-2, the only format; the schema is meaning.draft-2.schema.json from
+// the pinned meaninggraph/core checkout): JSON Schema validation of each file, then the rules a schema cannot express.
+// Every concept reference must resolve; extends joins compatible kinds only, without a cycle; values-of and units-of
+// name entities or value sets (a child may narrow its parent's, never change it); measures are computed from
+// properties and measures and grouped by dimensions and properties; a ratio is never summed; every modelspec://
+// binding must name an existing record type and field that fits its role (identifier and display-name on the
+// concept's own record type, one instances binding per concept, a reference to the record type of its target
+// concept); transitions and initial values name a value set's own values; inverse words sit on a property with
+// values-of; replaced-by goes with deprecated; and values must cover the data they describe. Links that the model
 // already states are derived (deriveLinks), never written.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
@@ -40,12 +33,15 @@ export const meaningSources = {
 const conceptId = '[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*';
 const bareRefPattern = new RegExp(`^${conceptId}$`);
 const conceptRefPattern = new RegExp(`^meaning://([A-Za-z0-9.-]+(?:/[A-Za-z0-9._-]+)+)/(${conceptId})(?:\\?ref=([A-Za-z0-9._/-]+))?$`);
+const ownRefPattern = new RegExp(`^meaning:///(${conceptId})$`);
 const modelRefPattern = /^modelspec:\/\/((?:[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._-]+)+)?)\/([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)(?:\?ref=([A-Za-z0-9._/-]+))?$/;
 
-// A bare id is a concept in the same repository; meaning://{host}/{org}/{repo}/{id}
+// A bare id or meaning:///{id} is a concept in the same repository; meaning://{host}/{org}/{repo}/{id}
 // is a concept in another one. The last path segment is the concept id.
 export function parseConceptRef(ref) {
   if (bareRefPattern.test(ref)) return { id: ref };
+  const own = ownRefPattern.exec(ref);
+  if (own) return { id: own[1] };
   const match = conceptRefPattern.exec(ref);
   if (!match) return null;
   return { repo: match[1], id: match[2], ref: match[3] };
@@ -58,11 +54,8 @@ export function parseModelRef(ref) {
   return { repo: match[1] || undefined, module: match[2], name: match[3], ref: match[4] };
 }
 
-export const draft1 = 'meaning/draft-1';
 export const draft2 = 'meaning/draft-2';
-export const draft2SchemaName = 'meaning.draft-2.schema.json';
-// The draft-2 schema is found beside the schema `checkMeaning` is given (meaning.schema.json, draft 1).
-export const draft2SchemaPath = (schemaPath) => join(dirname(schemaPath), draft2SchemaName);
+export const schemaName = 'meaning.draft-2.schema.json';
 
 const compiled = new Map();
 export function schemaValidator(schemaPath) {
@@ -108,7 +101,7 @@ export function indexConcepts(files, address) {
 export function conceptReferences(doc) {
   const found = [];
   const walk = (value) => {
-    if (typeof value === 'string') { const parsed = value.startsWith('meaning://') && parseConceptRef(value); if (parsed) found.push(parsed); }
+    if (typeof value === 'string') { const parsed = value.startsWith('meaning://') && parseConceptRef(value); if (parsed?.repo) found.push(parsed); }
     else if (value && typeof value === 'object') Object.values(value).forEach(walk);
   };
   walk(doc);
@@ -233,34 +226,15 @@ function loadModels(file, doc, origins) {
   return models;
 }
 
-// ---- the formats, and one vocabulary inside the reader ------------------------------------------------------------
-// A file is validated against the schema of its own format, and the earlier words are then read as the current
-// ones: the kind attribute as property, the binding key property as field, the role entity as instances and the
-// role foreign-key as reference. After that one set of rules serves both formats.
+// ---- the format ----------------------------------------------------------------------------------------------------
+// meaning/draft-2 is the only format. A file in any other format (meaning/draft-1 included) is refused; a concept of
+// such a file in a graph that is only resolved has no kind this check knows and matches no rule below.
 
-const knownFormats = [draft1, draft2];
-export const isKnownFormat = (format) => knownFormats.includes(format);
-const formatError = 'format must be meaning/draft-1 or meaning/draft-2';
-// The format of the file that holds a concept of `repo`, or undefined.
+export const isKnownFormat = (format) => format === draft2;
+const formatError = 'format must be meaning/draft-2';
 const formatOf = (concept, repo) => repo?.concepts?.get(concept.id)?.doc?.format;
-// A concept's kind in the current words, given the format of its file. The kinds property and value-set are read only in
-// a file that says meaning/draft-2: in any other file (the checker does not validate a graph it merely resolves) they
-// are no kind this check knows, as before draft 2, and the concept matches no rule below.
-function kindOf(concept, format) {
-  if (concept?.kind === 'attribute') return 'property';
-  if ((concept?.kind === 'property' || concept?.kind === 'value-set') && format !== draft2) return undefined;
-  return concept?.kind;
-}
+const kindOf = (concept, format) => (format === draft2 ? concept?.kind : undefined);
 const kindIn = ({ concept, repo }) => kindOf(concept, formatOf(concept, repo));
-function roleOf(binding) {
-  switch (binding?.role) {
-    case 'entity': return 'instances';
-    case 'foreign-key': return 'reference';
-    default: return binding?.role;
-  }
-}
-// The binding's field under the key its file's format uses, else under the other (a file the schema refuses).
-const fieldOf = (binding, format) => (format === draft2 ? binding.field ?? binding.property : binding.property ?? binding.field);
 const isEntityLike = (found) => ['entity', 'value-set'].includes(kindIn(found));
 
 // extends means "is a kind of", so it joins concepts of compatible kinds only: a concept's kind -> the kinds it may
@@ -276,17 +250,9 @@ const extendsKinds = {
 // What a measure may be computed from, and what it may be grouped by.
 const measureInputs = ['property', 'measure'];
 const measureDimensions = ['dimension', 'property'];
-// The kinds in the words a file's format uses: draft 1 has no value-set and calls a property an attribute.
-const wordsOf = (kinds, format) => (format === draft2 ? kinds : kinds.filter((kind) => kind !== 'value-set').map((kind) => (kind === 'property' ? 'attribute' : kind)));
-// The tables above in draft-1 words, as they were exported before draft 2.
-export const extendsCompatibility = {
-  entity: wordsOf(extendsKinds.entity, draft1),
-  attribute: wordsOf(extendsKinds.property, draft1),
-  dimension: wordsOf(extendsKinds.dimension, draft1),
-  measure: wordsOf(extendsKinds.measure, draft1),
-};
-export const measureInputKinds = wordsOf(measureInputs, draft1);
-export const measureDimensionKinds = wordsOf(measureDimensions, draft1);
+export const extendsCompatibility = extendsKinds;
+export const measureInputKinds = measureInputs;
+export const measureDimensionKinds = measureDimensions;
 // Aggregations that are wrong for a ratio: it is recomputed per group.
 const ratioAggregations = ['sum', 'count', 'average'];
 // Binding roles whose stored values name the concept's known values.
@@ -343,8 +309,8 @@ export function effectiveAggregation(concept, repo, resolve) {
   return node ? { aggregation: node.concept.measure.aggregation, from: node.concept } : { aggregation: 'none', from: null };
 }
 
-// The known values of a concept and the concept that holds the list: its own list (a draft-1 entity, attribute or
-// dimension), or that of the entity or value set named by its values-of (its own or inherited through extends).
+// The known values of a concept and the concept that holds the list: its own list (a value set), or that of the
+// value set (or entity) named by its values-of (its own or inherited through extends).
 // extends never passes values themselves: a kind of country attribute holds countries, but an entity that
 // extends another is not a list of the parent's instances.
 function knownValues(concept, local, resolve) {
@@ -356,9 +322,8 @@ function knownValues(concept, local, resolve) {
 }
 export const effectiveValues = (concept, local, resolve) => knownValues(concept, local, resolve).values;
 
-// A list is open when it is a value set that does not say `complete: true` (draft 2). A list in a draft-1 file has
-// no marker and is read as complete, as every reader has always read it.
-const isComplete = ({ concept, repo }) => formatOf(concept, repo) !== draft2 || concept.complete === true;
+// A list is open unless its value set says `complete: true`.
+const isComplete = ({ concept }) => concept.complete === true;
 
 // The known values that a stored value names. `match` is labels (labels and
 // aliases in any language, ignoring case) or codes.<code> (that code, exactly).
@@ -369,38 +334,6 @@ export function matchValues(values, stored, match = 'labels') {
   }
   const key = String(stored).toLowerCase();
   return values.filter((value) => [...Object.values(value.labels ?? {}), ...Object.values(value.aliases ?? {}).flat()].some((word) => word.toLowerCase() === key));
-}
-
-// ---- words that belong to the other format ----------------------------------------------------------------------
-// The schema of a file's format refuses these as well; the finding says which format the word belongs to.
-function formatWordFindings(doc, format) {
-  const found = [];
-  const other = format === draft2 ? draft1 : draft2;
-  for (const concept of Array.isArray(doc?.concepts) ? doc.concepts : []) {
-    if (!concept || typeof concept !== 'object') continue;
-    const where = `concept ${concept.id}`;
-    if (format === draft1) {
-      if (concept.kind === 'property') found.push({ where, message: `kind property belongs to ${other}; in ${format} it is written attribute` });
-      if (concept.kind === 'value-set') found.push({ where, message: `kind value-set belongs to ${other}` });
-      if (Object.hasOwn(concept, 'complete')) found.push({ where, message: `complete belongs to ${other}` });
-      for (const value of Array.isArray(concept.values) ? concept.values : []) {
-        if (value && typeof value === 'object' && Object.hasOwn(value, 'retired')) found.push({ where: `${where}: value ${value.id}`, message: `retired belongs to ${other}` });
-      }
-    } else {
-      if (concept.kind === 'attribute') found.push({ where, message: `kind attribute is written property in ${format}` });
-      if (Object.hasOwn(concept, 'values') && concept.kind !== 'value-set') found.push({ where, message: 'values belongs on a concept of kind value-set; name that concept with values-of' });
-    }
-    for (const binding of Array.isArray(concept.bindings) ? concept.bindings : []) {
-      if (!binding || typeof binding !== 'object') continue;
-      const at = `${where}: binding ${binding.model}`;
-      const hasProperty = Object.hasOwn(binding, 'property');
-      const hasField = Object.hasOwn(binding, 'field');
-      if (hasProperty && hasField) found.push({ where: at, message: `the binding has both property: and field:; ${format} writes ${format === draft2 ? 'field' : 'property'}` });
-      else if (format === draft1 && hasField) found.push({ where: at, message: `the binding key field belongs to ${other}; in ${format} it is written property` });
-      else if (format === draft2 && hasProperty) found.push({ where: at, message: `the binding key property is written field in ${format}` });
-    }
-  }
-  return found;
 }
 
 // A record type's key as a list. A model that gives it as anything else (key = 5, key = "Id") has no key to read.
@@ -428,8 +361,8 @@ export function deriveLinks(files, limits = {}) {
       for (const binding of Array.isArray(concept?.bindings) ? concept.bindings : []) {
         const parsed = typeof binding?.model === 'string' ? parseModelRef(binding.model) : null;
         if (!parsed || parsed.repo) continue;
-        const role = roleOf(binding);
-        const field = role === 'instances' ? undefined : fieldOf(binding, doc.format);
+        const role = binding.role;
+        const field = role === 'instances' ? undefined : binding.field;
         const id = identity(concept.id, parsed.module, parsed.name, field, role);
         if (!links.has(id)) links.set(id, link(concept.id, parsed.module, parsed.name, field, role, { ...(binding.note ? { note: binding.note } : {}), ...(binding.match ? { match: binding.match } : {}) }));
         if (role === 'instances') instances.push({ concept: concept.id, module: parsed.module, record: parsed.name, resolver: resolverFor(models, resolver) });
@@ -487,8 +420,8 @@ export function deriveLinks(files, limits = {}) {
 // `selfRepo` is the repository's own {host}/{org}/{repo}: a meaning://
 // reference to it is a reference to `local`. Returns a list of problems; empty
 // means the files are consistent. `notice(text, rule)`, when given, receives
-// the findings that are not problems (an earlier format, an earlier role name,
-// a retired value); see checkMeaningReport for the structured result.
+// the findings that are not problems (a retired value, a reference to a
+// deprecated concept); see checkMeaningReport for the structured result.
 export function checkMeaning({ notice, ...rest }) {
   const report = checkMeaningReport(rest);
   if (notice) for (const found of report.notices) notice(found.message, found.rule);
@@ -496,8 +429,7 @@ export function checkMeaning({ notice, ...rest }) {
 }
 
 // The same check with the rule of every finding: { problems, notices, links } where problems and notices are
-// lists of { rule, message } (the rule ids of the Go checker, plus format-mixed, format-word, earlier-format,
-// earlier-role-name and retired-value) and `links` is the derived-link list of deriveLinks when `derive` is set
+// lists of { rule, message } (the rule ids of the Go checker, plus retired-value and deprecated-concept) and `links` is the derived-link list of deriveLinks when `derive` is set
 // and there is no problem, else null (the links of a graph that fails the check are not defined).
 export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, models: givenModels, selfRepo, derive = false }) {
   const problems = [];
@@ -514,13 +446,12 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
   const note = (rule, message) => notices.push({ rule, message });
   for (const message of local.problems) add('duplicate-concept', message);
   const resolve = (repo, ref) => (selfRepo !== undefined && repo === selfRepo ? local : resolveOther(repo, ref));
-  // One format per graph: the files one reader loads as one graph change format together.
-  const formats = new Map();
-  for (const { path, doc } of local.files) if (isKnownFormat(doc?.format) && !formats.has(doc.format)) formats.set(doc.format, path);
-  if (formats.size > 1) add('format-mixed', `format-mixed: the meaning files of one graph change format together, and these are in ${[...formats].map(([format, path]) => `${format} (${path})`).join(' and ')}`);
   // One pin per referenced repository across all of this repository's files:
   // the repository resolves against one version of each dependency.
   const pins = new Map();
+  const deprecatedNotice = (concept, ref, where) => {
+    if (concept.deprecated === true) note('deprecated-concept', `${where}: deprecated-concept: ${ref} is deprecated${concept['replaced-by'] ? `; use ${concept['replaced-by']}` : ''}`);
+  };
   const lookup = (ref, where) => {
     const parsed = parseConceptRef(ref);
     if (!parsed) { add('reference-syntax', `${where}: ${ref} is not a concept reference`); return null; }
@@ -528,6 +459,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
       if (parsed.repo && parsed.ref !== undefined) add('self-pin', `${where}: ${ref} pins this repository's own concept; a reference to the repository itself cannot carry ?ref=`);
       const found = local.concepts.get(parsed.id);
       if (!found) add('unknown-concept', `${where}: concept ${parsed.id} is not declared in this repository`);
+      else deprecatedNotice(found.concept, ref, where);
       return found ? { concept: found.concept, repo: local } : null;
     }
     const seen = pins.get(parsed.repo);
@@ -537,10 +469,11 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
     if (remote.error) { add('unresolved-graph', `${where}: ${remote.error}`); return null; }
     const found = remote.concepts.get(parsed.id);
     if (!found) add('unknown-concept', `${where}: concept ${parsed.id} does not exist in meaning://${parsed.repo}`);
+    else deprecatedNotice(found.concept, ref, where);
     return found ? { concept: found.concept, repo: remote } : null;
   };
   // ModelSpec record types whose rows are instances of a concept (role instances, written entity or instances).
-  const entityBindings = (concept) => (concept.bindings ?? []).filter((b) => roleOf(b) === 'instances').map((b) => parseModelRef(b.model)).filter(Boolean);
+  const entityBindings = (concept) => (concept.bindings ?? []).filter((b) => b.role === 'instances').map((b) => parseModelRef(b.model)).filter(Boolean);
   const loaded = [];
   const byDocument = new Map();
   const modelOrigins = new WeakMap();
@@ -548,7 +481,6 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
   for (const file of local.files) {
     const { path, doc } = file;
     const format = doc?.format;
-    if (format === draft1) note('earlier-format', `${path}: earlier-format: the file is in ${draft1}, the earlier format; it is read in full`);
     // A mapping with no format or an unknown one is refused with that one finding, whether or not a schema path is given,
     // and no other rule is applied to it (FORMAT.md, "Files and discovery"): its words belong to no format. Its concepts
     // stay in the index, so a duplicate id is still reported and another file may name them.
@@ -557,16 +489,8 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
       continue;
     }
     if (schemaPath) {
-      if (isKnownFormat(format)) {
-        const schema = format === draft2 ? draft2SchemaPath(schemaPath) : schemaPath;
-        if (format === draft2 && !existsSync(schema)) add('schema', `${path}: schema: ${format} needs ${schema}, which does not exist`);
-        else for (const problem of schemaProblems(doc, schema)) add('schema', `${path}: schema: ${problem}`);
-      } else for (const problem of schemaProblems(doc, schemaPath)) add('schema', `${path}: schema: ${problem}`);
-    }
-    if (isKnownFormat(format)) for (const { where, message } of formatWordFindings(doc, format)) add('format-word', `${path}: ${where}: format-word: ${message}`);
-    if (format === draft2) {
-      const earlier = [...new Set((Array.isArray(doc.concepts) ? doc.concepts : []).flatMap((c) => (Array.isArray(c?.bindings) ? c.bindings : [])).map((b) => b?.role).filter((role) => role === 'entity' || role === 'foreign-key'))];
-      if (earlier.length > 0) note('earlier-role-name', `${path}: earlier-role-name: the role names entity and foreign-key are the earlier spellings of instances and reference (this file uses ${earlier.join(' and ')})`);
+      if (!existsSync(schemaPath)) add('schema', `${path}: schema: ${schemaPath} does not exist`);
+      else for (const problem of schemaProblems(doc, schemaPath)) add('schema', `${path}: schema: ${problem}`);
     }
     if (!Array.isArray(doc?.concepts)) continue;
     let models = givenModels;
@@ -583,7 +507,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
     }
     for (const concept of doc.concepts) {
       const where = modelMessage`${path}: concept ${concept.id}`;
-      const entityLike = format === draft2 ? 'an entity or a value-set' : 'an entity';
+      const entityLike = 'an entity or a value-set';
       if (concept.of) {
         const owner = lookup(concept.of, `${where} of`);
         if (owner && !isEntityLike(owner)) add('target-kind', `${where}: of names ${concept.of}, which is ${an(owner.concept.kind)}, not ${entityLike}`);
@@ -591,7 +515,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
       if (concept.extends) {
         const parent = lookup(concept.extends, `${where} extends`);
         const allowed = Object.hasOwn(extendsKinds, kindOf(concept, format)) ? extendsKinds[kindOf(concept, format)] : [];
-        if (parent && !allowed.includes(kindIn(parent))) add('extends-kind', `${where}: ${an(concept.kind)} cannot extend ${concept.extends}, which is ${an(parent.concept.kind)}; extends means "is a kind of", and ${an(concept.kind)} may extend only ${wordsOf(allowed, format).join(' or ')}`);
+        if (parent && !allowed.includes(kindIn(parent))) add('extends-kind', `${where}: ${an(concept.kind)} cannot extend ${concept.extends}, which is ${an(parent.concept.kind)}; extends means "is a kind of", and ${an(concept.kind)} may extend only ${allowed.join(' or ')}`);
         // The chain of extends, through any repository, comes back to a concept it has passed.
         const seen = [concept];
         for (let node = resolveConcept(concept.extends, local, resolve); node; node = resolveConcept(node.concept.extends, node.repo, resolve)) {
@@ -627,8 +551,8 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
           else if (named[0].retired === true) note('retired-value', `${where}: retired-value: unit "${concept.unit}" names the value ${named[0].id} of ${unitDomain.concept['units-of']}, which is retired`);
         }
       }
-      const inputsWord = format === draft2 ? 'properties and measures' : 'attributes and measures';
-      const dimensionsWord = format === draft2 ? 'dimensions or properties' : 'dimensions or attributes';
+      const inputsWord = 'properties and measures';
+      const dimensionsWord = 'dimensions or properties';
       for (const ref of concept.measure?.inputs ?? []) {
         const input = lookup(ref, `${where} measure.inputs`);
         if (input && !measureInputs.includes(kindIn(input))) add('measure-input', `${where}: measure.inputs names ${ref}, which is ${an(input.concept.kind)}; a measure is computed from ${inputsWord} only`);
@@ -657,8 +581,44 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
           names.set(key, value.id);
         }
       }
+      // Transitions and initial values name the value set's own values (FORMAT.md, "Transitions and initial values").
+      if (concept.transitions !== undefined || concept.initial !== undefined) {
+        const own = new Set((concept.values ?? []).map((value) => value.id));
+        const unknown = (id, at) => { if (!own.has(id)) add('transition', `${where}: ${at} names ${id}, which is not a value of ${concept.id}`); };
+        for (const id of Array.isArray(concept.initial) ? concept.initial : []) unknown(id, 'initial');
+        const froms = new Set();
+        for (const transition of Array.isArray(concept.transitions) ? concept.transitions : []) {
+          if (!transition || typeof transition !== 'object') continue;
+          unknown(transition.from, 'transitions.from');
+          if (froms.has(transition.from)) add('transition', `${where}: transitions list from ${transition.from} twice; give it one item`);
+          froms.add(transition.from);
+          const targets = new Set();
+          for (const to of Array.isArray(transition.to) ? transition.to : []) {
+            unknown(to, `transitions from ${transition.from} to`);
+            if (to === transition.from) add('transition', `${where}: transition from ${to} to itself; a transition is a change of value`);
+            if (targets.has(to)) add('transition', `${where}: transitions from ${transition.from} name ${to} twice`);
+            targets.add(to);
+          }
+        }
+      }
+      // Inverse words need a relation to reverse, and must not repeat the concept's own words.
+      if (concept.inverse !== undefined) {
+        if (!inherited(concept, local, 'values-of', resolve)) add('inverse', `${where}: inverse needs values-of (own or inherited): it names the reverse direction of that relation`);
+        const ownWords = new Map();
+        for (const [language, label] of Object.entries(concept.labels ?? {})) ownWords.set(`${language}:${String(label).toLowerCase()}`, label);
+        for (const [language, words] of Object.entries(concept.synonyms ?? {})) for (const word of words) ownWords.set(`${language}:${word.toLowerCase()}`, word);
+        const inverseWords = [...Object.entries(concept.inverse?.labels ?? {}).map(([language, label]) => [language, label]), ...Object.entries(concept.inverse?.synonyms ?? {}).flatMap(([language, words]) => words.map((word) => [language, word]))];
+        for (const [language, word] of inverseWords) if (ownWords.has(`${language}:${String(word).toLowerCase()}`)) add('inverse', `${where}: inverse word "${word}" (${language}) repeats a label or synonym of ${concept.id}`);
+      }
+      // replaced-by goes with deprecated, resolves, and names another concept that is not deprecated.
+      if (concept['replaced-by'] !== undefined) {
+        if (concept.deprecated !== true) add('deprecation', `${where}: replaced-by needs deprecated: true`);
+        const successor = lookup(concept['replaced-by'], `${where} replaced-by`);
+        if (successor && successor.concept === concept) add('deprecation', `${where}: replaced-by names the concept itself`);
+        else if (successor && successor.concept.deprecated === true) add('deprecation', `${where}: replaced-by names ${concept['replaced-by']}, which is deprecated too; name the concept to use`);
+      }
       const entities = entityBindings(concept);
-      if (entities.length > 1) add('entity-bindings', `${where}: has ${entities.length} ${format === draft2 ? 'instances' : 'entity'} bindings (${entities.map((e) => `${e.module}.${e.name}`).join(', ')}); a concept binds one entity`);
+      if (entities.length > 1) add('entity-bindings', `${where}: has ${entities.length} instances bindings (${entities.map((e) => `${e.module}.${e.name}`).join(', ')}); a concept binds one entity`);
       for (const binding of concept.bindings ?? []) {
         const parsed = parseModelRef(binding.model);
         if (!parsed) { add('binding-model', `${where}: ${binding.model} is not a modelspec:// reference`); continue; }
@@ -667,7 +627,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
         const record = modelResolver.record(parsed.module, parsed.name);
         if (!record) { add('binding-model', `${where}: ${binding.model}: module ${parsed.module} has no entity ${parsed.name}`); continue; }
         const entity = record.definition;
-        const field = fieldOf(binding, format);
+        const field = binding.field;
         if (!field) continue;
         const fact = modelResolver.field(record, field);
         if (fact.status === 'absent') { add('binding-model', `${where}: ${binding.model}: entity ${parsed.name} has no property ${field}`); continue; }
@@ -687,7 +647,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
         if (binding.role === 'identifier' && !keyOf(entity).includes(field)) add('binding-role', `${at} has role identifier but is not in the key of ${parsed.name} [${keyOf(entity).join(', ')}]`);
         if (binding.role === 'display-name' && member.type !== 'string') add('binding-role', `${at} has role display-name but is ${reference ? `a reference to ${reference}` : an(memberType)}, not a string`);
         if (binding.role === 'value' && reference) add('binding-role', `${at} has role value but is a reference to ${reference}; bind it with role reference`);
-        if (roleOf(binding) === 'reference') {
+        if (binding.role === 'reference') {
           if (!reference) { add('binding-role', `${at} has role ${binding.role} but is not a reference (it is ${an(memberType)})`); continue; }
           // The reference must point at the entity whose rows are the instances:
           // this concept's own (an entity) or those of its values-of entity.
@@ -741,7 +701,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
 // ones read here, and nothing would be checked. A stored value that names no
 // value of an open list (a value set without `complete: true`) is a notice,
 // `unknown-value`, not a problem; a retired value that is named is a notice,
-// `retired-value`. A list in a draft-1 file is complete.
+// `retired-value`.
 export function valueCoverageReport({ local, resolve, data }) {
   const problems = [];
   const notices = [];
@@ -749,7 +709,7 @@ export function valueCoverageReport({ local, resolve, data }) {
   const refuse = (path, format) => {
     if (refused.has(path)) return;
     refused.add(path);
-    problems.push(`${path}: format ${format === undefined ? 'is missing' : JSON.stringify(format)}, but this check knows meaning/draft-1 and meaning/draft-2 only; no binding of the file was read`);
+    problems.push(`${path}: format ${format === undefined ? 'is missing' : JSON.stringify(format)}, but this check knows meaning/draft-2 only; no binding of the file was read`);
   };
   for (const { path, doc } of local.files ?? []) if (!isKnownFormat(doc?.format)) refuse(path, doc?.format);
   for (const { concept, path, doc } of local.concepts.values()) {
@@ -759,7 +719,7 @@ export function valueCoverageReport({ local, resolve, data }) {
     if (values.length === 0) continue;
     const complete = isComplete(holder);
     for (const binding of concept.bindings ?? []) {
-      const field = fieldOf(binding, doc.format);
+      const field = binding.field;
       if (!field || !valueRoles.includes(binding.role)) continue;
       const match = binding.match ?? 'labels';
       const entity = parseModelRef(binding.model)?.name;

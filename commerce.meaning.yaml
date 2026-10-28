@@ -1,4 +1,4 @@
-format: meaning/draft-1
+format: meaning/draft-2
 id: commerce
 name: Commerce
 description: >-
@@ -80,7 +80,7 @@ concepts:
     description: One product or service requested on an order.
 
   - id: invoice-total
-    kind: attribute
+    kind: property
     of: invoice
     extends: money-amount
     labels:
@@ -92,7 +92,7 @@ concepts:
     description: The amount charged on an invoice, normally the sum of its lines.
 
   - id: price
-    kind: attribute
+    kind: property
     extends: money-amount
     labels:
       en: Price
@@ -106,7 +106,7 @@ concepts:
       unit-price.
 
   - id: unit-price
-    kind: attribute
+    kind: property
     of: invoice-line
     extends: price
     labels:
@@ -118,7 +118,7 @@ concepts:
     description: The price charged for one unit of an item on an invoice line.
 
   - id: quantity
-    kind: attribute
+    kind: property
     of: invoice-line
     labels:
       en: Quantity

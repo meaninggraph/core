@@ -1,4 +1,4 @@
-format: meaning/draft-1
+format: meaning/draft-2
 id: delivery
 name: Software delivery
 description: >-
@@ -25,7 +25,7 @@ concepts:
       work item links them.
 
   - id: work-item-status
-    kind: attribute
+    kind: property
     of: work-item
     labels:
       en: Work item status
@@ -35,7 +35,7 @@ concepts:
       the item is in.
 
   - id: work-item-priority
-    kind: attribute
+    kind: property
     of: work-item
     labels:
       en: Work item priority
@@ -47,7 +47,7 @@ concepts:
       priority at the same time.
 
   - id: work-item-story-points
-    kind: attribute
+    kind: property
     of: work-item
     labels:
       en: Work item story points
@@ -64,7 +64,7 @@ concepts:
     unit: story points
 
   - id: work-item-parent
-    kind: attribute
+    kind: property
     of: work-item
     labels:
       en: Work item parent
@@ -76,7 +76,7 @@ concepts:
     values-of: work-item
 
   - id: work-item-sprint
-    kind: attribute
+    kind: property
     of: work-item
     labels:
       en: Work item sprint
@@ -163,7 +163,7 @@ concepts:
       error is a problem that has been analysed, not a name for this flaw.
 
   - id: bug-severity
-    kind: attribute
+    kind: property
     of: bug
     labels:
       en: Bug severity
@@ -178,7 +178,7 @@ concepts:
       and, once it hurts a service, an incident severity as well.
 
   - id: bug-steps-to-reproduce
-    kind: attribute
+    kind: property
     of: bug
     labels:
       en: Bug steps to reproduce
@@ -233,7 +233,7 @@ concepts:
       sprint is not a release and not a deployment.
 
   - id: sprint-project
-    kind: attribute
+    kind: property
     of: sprint
     labels:
       en: Sprint project
@@ -243,7 +243,7 @@ concepts:
     values-of: project
 
   - id: sprint-start
-    kind: attribute
+    kind: property
     of: sprint
     extends: date
     labels:
@@ -251,7 +251,7 @@ concepts:
     description: The calendar day the sprint starts.
 
   - id: sprint-end
-    kind: attribute
+    kind: property
     of: sprint
     extends: date
     labels:
@@ -274,7 +274,7 @@ concepts:
       making another release.
 
   - id: release-version
-    kind: attribute
+    kind: property
     of: release
     labels:
       en: Release version
@@ -284,7 +284,7 @@ concepts:
     values-of: software-version
 
   - id: release-work-item
-    kind: attribute
+    kind: property
     of: release
     labels:
       en: Release work item
@@ -312,7 +312,7 @@ concepts:
       remediation, is the deployment outcome.
 
   - id: deployment-environment
-    kind: attribute
+    kind: property
     of: deployment
     labels:
       en: Deployment environment
@@ -323,7 +323,7 @@ concepts:
     values-of: environment
 
   - id: deployment-date
-    kind: attribute
+    kind: property
     of: deployment
     labels:
       en: Deployment date
@@ -333,7 +333,7 @@ concepts:
       version number.
 
   - id: deployment-release
-    kind: attribute
+    kind: property
     of: deployment
     labels:
       en: Deployment release
@@ -344,7 +344,7 @@ concepts:
     values-of: release
 
   - id: deployment-build
-    kind: attribute
+    kind: property
     of: deployment
     labels:
       en: Deployment build
@@ -352,7 +352,7 @@ concepts:
     values-of: build
 
   - id: deployment-outcome
-    kind: attribute
+    kind: property
     of: deployment
     labels:
       en: Deployment outcome
@@ -366,7 +366,7 @@ concepts:
       outcome of one deployment is not either of those rates.
 
   - id: deployment-change-request
-    kind: attribute
+    kind: property
     of: deployment
     labels:
       en: Deployment change request
@@ -390,7 +390,7 @@ concepts:
       which judges a change to a service, and it is not a deployment.
 
   - id: pull-request-repository
-    kind: attribute
+    kind: property
     of: pull-request
     labels:
       en: Pull request repository
@@ -408,7 +408,7 @@ concepts:
       belong to one pull request.
 
   - id: code-review-pull-request
-    kind: attribute
+    kind: property
     of: code-review
     labels:
       en: Code review pull request

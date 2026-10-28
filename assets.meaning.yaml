@@ -1,4 +1,4 @@
-format: meaning/draft-1
+format: meaning/draft-2
 id: assets
 name: Assets and finance
 description: >-
@@ -7,7 +7,8 @@ description: >-
 license: CC0-1.0
 concepts:
   - id: currency
-    kind: entity
+    kind: value-set
+    complete: true
     labels:
       en: Currency
       ru: Валюта
@@ -40,7 +41,7 @@ concepts:
         codes: {alpha: GBP, numeric: "826"}
 
   - id: money-amount
-    kind: attribute
+    kind: property
     units-of: currency
     labels:
       en: Money amount
@@ -67,7 +68,7 @@ concepts:
       republished; those fields alone do not identify an immutable observation.
 
   - id: fx-reference-date
-    kind: attribute
+    kind: property
     of: fx-reference-quote
     extends: date
     labels:
@@ -78,7 +79,7 @@ concepts:
       or rate-setting instant, or an observation at midnight.
 
   - id: fx-base-currency
-    kind: attribute
+    kind: property
     of: fx-reference-quote
     values-of: currency
     labels:
@@ -89,7 +90,7 @@ concepts:
       state it as explicit context when the source omits a base-currency field.
 
   - id: fx-quote-currency
-    kind: attribute
+    kind: property
     of: fx-reference-quote
     values-of: currency
     labels:
@@ -101,7 +102,7 @@ concepts:
       a zero rate or permission to substitute a successor currency.
 
   - id: indicative-fx-reference-rate
-    kind: attribute
+    kind: property
     of: fx-reference-quote
     labels:
       en: Indicative foreign exchange reference rate

@@ -8,23 +8,12 @@ schema wins and this page has a bug. The reference checker is
 [`scripts/lib/meaning.mjs`](scripts/lib/meaning.mjs);
 [`scripts/check.mjs`](scripts/check.mjs) runs it on this repository.
 
-There are two formats, and a reader that knows both reads both:
-
-- `meaning/draft-2` (this page) is the newer one: the kind `property`, the
-  binding key `field:`, the roles `instances` and `reference`, and the kind
-  `value-set`.
-- `meaning/draft-1` is the earlier one, with its own schema,
-  [`meaning.schema.json`](meaning.schema.json). [How draft 1 differs](#how-draft-1-differs)
-  says exactly where. A reader reads it in full and reports one notice for each
-  draft-1 file of the graph it checks, and none for a graph that is only pinned.
-
-At this commit only this repository's checker reads `meaning/draft-2`; no
-released reader does yet. At the time of writing (10 October 2026) the newest
-release of `meaninggraph/cli`, `v0.3.0`, validates against a schema whose
-`format` is the one value `meaning/draft-1` and expects a refusal for a file that
-says `meaning/draft-2`, and the registry still checks graphs with the checker of
-an earlier commit of this repository. Published graphs stay in `meaning/draft-1`
-until the readers are released.
+This is the only meaning-file format. The earlier format, `meaning/draft-1`,
+was withdrawn on 27 October 2026 in a clean cut
+([decision 0004](spec/decisions/0004-one-format-and-value-set-transitions.md)): its
+schema was removed, readers no longer read it, and every registered graph was
+rewritten in this format. A file that says `meaning/draft-1` is refused like any
+other unknown format.
 
 A meaning file says what the data in a dataset means: concepts with labels per
 language, synonyms, a description, and bindings to ModelSpec record types and
@@ -34,10 +23,11 @@ Decisions about this format are recorded in
 [`spec/decisions/`](spec/decisions/README.md):
 [0001](spec/decisions/0001-derived-links-and-two-role-names.md),
 [0002](spec/decisions/0002-kind-property-binding-key-field-and-the-format-identifier.md)
-and [0003](spec/decisions/0003-value-sets.md). A decision changes this page only
-when the page is changed to match it. The approval of draft 1 is recorded in the
-draft-1 format proposal in the repository `sneat-co/meaninggraph` (not
-published).
+[0003](spec/decisions/0003-value-sets.md) and
+[0004](spec/decisions/0004-one-format-and-value-set-transitions.md). A decision
+changes this page only when the page is changed to match it. The approval of
+draft 1 is recorded in the draft-1 format proposal in the repository
+`sneat-co/meaninggraph` (not published).
 
 ## Files and discovery
 
@@ -49,29 +39,29 @@ published).
 - All files of a repository are one set of concepts, which is one **graph** (the
   files one reader loads as one graph). A file is packaging: its name and `id`
   are not part of any concept's address.
-- Every file carries `format: meaning/draft-1` or `format: meaning/draft-2`. The
-  key's value decides, wherever the key stands in the file. A file with no `format`,
-  or with another value, is an error: `format must be meaning/draft-1 or
+- Every file carries `format: meaning/draft-2`. The key's value decides,
+  wherever the key stands in the file. A file with no `format`, or with another
+  value (`meaning/draft-1` included), is an error: `format must be
   meaning/draft-2`. For such a file that is a YAML mapping the reference checker
   reports that error (rule `schema`, whether or not it is given a schema to
-  validate with) and applies no other rule to the file: the words of a file with
-  no known format belong to no format, and it gets no `earlier-format` notice.
-  Its concept ids stay in the graph's index, so an id declared twice is still
-  reported and another file's reference to one of them still resolves. A file
-  that is not a mapping (an empty file, a list) is refused by the schema instead
-  (`/ must be object`), and only when the checker is given one.
-- **One graph, one format.** The files of one graph refer to each other by bare
-  id, so they change format together. A graph whose files are in two formats is
-  an error (`format-mixed`). Two graphs may differ: a graph in one format may
-  pin a graph in the other ([Reading both formats](#reading-both-formats)).
+  validate with) and applies no other rule to the file. Its concept ids stay in
+  the graph's index, so an id declared twice is still reported and another
+  file's reference to one of them still resolves. A file that is not a mapping
+  (an empty file, a list) is refused by the schema instead (`/ must be object`),
+  and only when the checker is given one.
 - File `id`s are not checked for uniqueness; give each file in a repository a
   different one.
+- A dataset repository whose model files live in a subdirectory keeps its
+  meaning files in the root and points `models` at the subdirectory
+  (`models: {chinook: model/chinook.modelspec.hcl}`): only root files are part of
+  the graph that `meaning://{host}/{org}/{repo}/…` addresses.
 
 ## Addresses and pinning
 
 | Reference | Means |
 |---|---|
 | `country` | The concept `country` in the same repository |
+| `meaning:///country` | The same: an empty authority means the current repository. This is the form to use outside meaning files (in a specification, say), where a bare word cannot be told from prose |
 | `meaning://github.com/meaninggraph/core/country` | The concept `country` in the repository `github.com/meaninggraph/core`: the host, then `{org}/{repo}`, and the last segment is the concept id |
 | `meaning://github.com/meaninggraph/core/country?ref=<commit>` | The same, pinned |
 | `modelspec:///chinook.Invoice` | The ModelSpec record type `Invoice` of module `chinook`, declared in the file's `models` (same repository), with `field:` beside it for a field |
@@ -106,8 +96,8 @@ extends: meaning://github.com/meaninggraph/core/invoice?ref=<40-character commit
   inheritance, cycles and ratios follow it. Within a repository, prefer bare
   ids.
 - Concept ids in a published repository never change meaning. A different
-  meaning is a new id; a retired concept is deprecated, not deleted, so pinned
-  references keep resolving.
+  meaning is a new id; a retired concept is marked `deprecated: true`, not
+  deleted, so pinned references keep resolving ([Deprecation](#deprecation)).
 
 ## Required fields
 
@@ -184,6 +174,28 @@ them, a value set is allowed too.
   (`manager` holds Chinook employees, a kind of the universal employee). It may
   narrow its parent's, never change it.
 
+### Inverse labels
+
+A property or dimension with `values-of` (own or inherited) MAY carry
+`inverse`: `labels` (with `en`) and optional `synonyms` naming the reverse
+direction of the relation.
+
+```yaml
+- id: parent
+  kind: property
+  of: contact
+  values-of: contact
+  labels: {en: Parent}
+  description: A contact's parent.
+  inverse:
+    labels: {en: Children}
+```
+
+`inverse` has no id and no address: it is words for matching and display, not a
+concept. A tool that needs to point at the reverse direction names the property
+and the direction. The words follow the rules of [Words](#words-synonyms-and-aliases),
+and must not repeat the property's own labels or synonyms in the same language.
+
 ## Value sets
 
 A value set is a concept of kind `value-set` that carries `values`: the list of
@@ -219,13 +231,48 @@ the values known so far. `values` is allowed on a value set and nowhere else.
 - A **retired** value keeps its entry and its id. It still matches a stored
   value or a `unit` (reported as a notice, `retired-value`), and its words still
   count for the rule that one word names one value.
-- A list on an entity, an attribute or a dimension in a `meaning/draft-1` file has
-  no marker and is complete.
 - Tying the rows of a lookup table to the values of a value set is not part of
   the format: a lookup table is a concept of kind `entity` that extends the
   value set and is bound to the record type. A project cannot add values of its
   own to a value set that another graph owns, and no checker compares the
   values of a model's enum with a value set.
+
+### Transitions and initial values
+
+A value set MAY say which changes between its values are possible, and which
+values a first recorded value may take:
+
+```yaml
+- id: order-status-list
+  kind: value-set
+  labels: {en: Order status}
+  description: The states an order passes through.
+  values:
+    - {id: open, labels: {en: Open}}
+    - {id: shipped, labels: {en: Shipped}}
+    - {id: on-hold, labels: {en: On hold}}
+  initial: [open]
+  transitions:
+    - {from: open, to: [shipped, on-hold]}
+    - {from: on-hold, to: [open]}
+```
+
+- `transitions` is a non-empty list of `{from, to}`: `from` is one value id,
+  `to` a non-empty list of value ids. `initial` is a non-empty list of value ids.
+  Every id is one of the set's **own** values. An unknown id, a `from` listed
+  twice, a value repeated in one `to`, and a transition from a value to itself
+  are errors: a transition is a change of value, and an edit that keeps the
+  value is not one.
+- With `transitions`, a change not listed is not possible. A value with no
+  outgoing transition is terminal. Without `transitions` the format says nothing
+  about changes; without `initial`, nothing about first values.
+- Retired values may appear, so that old histories stay valid.
+- `transitions` and `initial` are never inherited through `extends`, like
+  `values`.
+- A value set is still open: a stored value that matches no known value is still
+  reported as unknown, and transitions say nothing about it.
+- The format declares transitions; checking a dataset's history against them
+  needs ordered rows and is left to tools.
 
 ## Measures
 
@@ -254,8 +301,7 @@ the values known so far. `values` is allowed on a value set and nowhere else.
   word.
 - Source ids are unique within a file, and a concept's `source` names a source
   declared in the **same file**.
-- Binding roles: a concept has at most one `instances` binding, counted under
-  both names of the role (see below).
+- Binding roles: a concept has at most one `instances` binding.
 
 Whether two concepts may share a synonym is not part of the format. This
 repository does not allow it within a language, unless one concept is a kind of
@@ -284,8 +330,8 @@ name to source path, relative to the file).
 | `reference` | required | the field references the record type whose rows are the concept's instances (its own `instances` binding, or that of its `values-of` concept) | a reference, to that record type |
 | `value` | required | the field holds the concept's value | not a reference |
 
-The earlier names `entity` (for `instances`) and `foreign-key` (for
-`reference`) are accepted in both formats, in every place the current names are.
+The roles are exactly these five; the earlier names `entity` and
+`foreign-key` are errors.
 
 - Allowed roles by kind: entity: `instances`, `identifier`, `display-name`,
   `reference`; property and dimension: `value`, `reference` (a `reference`
@@ -311,9 +357,7 @@ The earlier names `entity` (for `instances`) and `foreign-key` (for
   concept's known values, `labels` (default) or `codes.<code>`. A dataset check
   requires every distinct stored value (nulls aside) to name exactly one known
   value, with the difference that a value set is open: see [Value sets](#value-sets),
-  above. In a draft-1 file an entity that carries `values` is checked against its
-  own list; in a draft-2 file an entity that extends a value set is not checked
-  against it.
+  above. An entity that extends a value set is not checked against it.
 - A measure's `inputs` name what it is computed from; they are not bindings.
   Bind a measure only to a column that stores the measure itself.
 - Universal concepts, such as the ones in this repository, carry no bindings:
@@ -324,7 +368,7 @@ The earlier names `entity` (for `instances`) and `foreign-key` (for
 A *link* is one fact of the form "this record type, or this field, holds this
 concept in this role". A *written link* comes from a binding line. A *derived
 link* is computed from the model and is never written. A binding line that only
-restates what the model already says is therefore optional, in both formats.
+restates what the model already says is therefore optional.
 
 The rule in short: for a field that refers to a record type, each concept bound
 to that record type with role instances applies to the field, with role
@@ -345,8 +389,7 @@ Made exact:
    For a graph that does not pass the check the result is not defined, and a
    reader must not show derived links for it.
 2. **Identity.** A link is identified by the concept id, the module short name,
-   the record type name, the field name (absent for `instances`) and the role,
-   with the earlier role names replaced by the current ones.
+   the record type name, the field name (absent for `instances`) and the role.
 3. **Written links.** Each binding line gives one written link, keeping its
    `note` and `match`. A line that repeats the five parts of an earlier line of
    the same concept adds nothing; the earlier line's note stands.
@@ -380,106 +423,63 @@ objects with `concept`, `model` (`modelspec:///module.Name`), `field` (unless
 the role is `instances`), `role` (always the current name), `note` and `match`
 when the written line has them, and `"derived": true` on a derived link only.
 
-## Reading both formats
+## Deprecation
 
-A reader validates a file against the schema of the file's own format, then
-reads the earlier words as the current ones before it applies any rule that
-looks at more than one concept:
+A concept MAY carry `deprecated: true`, and with it `replaced-by`: a reference
+to the concept to use instead.
 
-| As written | Read as |
-|---|---|
-| `kind: attribute` (draft 1 only) | `property` |
-| `property:` on a binding (draft 1 only) | `field` |
-| `role: entity` (either format) | `instances` |
-| `role: foreign-key` (either format) | `reference` |
+```yaml
+- id: postcode
+  kind: property
+  of: address
+  labels: {en: Postcode}
+  description: Use postal-code.
+  deprecated: true
+  replaced-by: postal-code
+```
 
-After that one set of rules serves both formats. A graph that is draft-1
-throughout is accepted or refused as it was before draft 2, with two things
-aside: the two new role names, and a model that writes a record type's `key` as
-anything but a list. Such a key is read as no key, so an `identifier` binding on
-that record type is a problem, where `key = "Id"` used to let it pass. The
-reference checker does not validate a graph it merely resolves (below), so it
-reads the kinds `value-set` and `property` only from a file that says
-`meaning/draft-2`: in any other file (one that says `meaning/draft-1`, another
-value or nothing) they are no kind it knows, and a graph of either format that
-names such a concept (with `of`, `values-of`, `units-of`, `extends`, `inputs` or
-`dimensions`) is refused, a draft-1 graph as it was before draft 2.
-
-When a graph of one format pins a graph of the other, the single vocabulary
-means: `extends` between an `attribute` in one and a `property` or a `dimension`
-in the other is allowed, in both directions; a measure's `inputs` and
-`dimensions` may name the other format's properties or attributes; `of`,
-`values-of`, `units-of` and `extends` in a draft-1 file may name a value set of a
-draft-2 graph; and a draft-2 file may name, with `values-of` or `units-of`, a
-draft-1 entity that carries `values`, whose list is the known values. Each file
-is validated against the schema of its own format, whichever graph it belongs
-to. Whether a list is open or complete is decided by the file that holds it. The
-reference checker does not validate a graph it merely resolves.
-
-## How draft 1 differs
-
-Draft 2 is draft 1 with the changes below. Everything else is the same.
-
-| | `meaning/draft-1` | `meaning/draft-2` |
-|---|---|---|
-| Format line | `format: meaning/draft-1` | `format: meaning/draft-2` |
-| Schema | `meaning.schema.json` | `meaning.draft-2.schema.json` |
-| Kind of a property | `attribute` | `property` (`attribute` is an error) |
-| Binding key | `property:` | `field:` (`property:` is an error) |
-| Kind for a list of values | none: `values` on an `entity`, `attribute` or `dimension` | `value-set`; `values` is allowed on it and nowhere else |
-| `of`, `values-of`, `units-of`, `extends` | name, within one graph, an entity (`extends`: an entity only extends an entity) | name an entity or a value set (an entity may extend a value set; a value set may extend a value set or an entity) |
-| `values` together with `values-of` on one concept | an error | an error (`values` is allowed only on a value set, which may not carry `values-of`) |
-| Display names of a bound entity | an entity that carries `values` has its stored display names matched against that list | an entity carries no `values`; one that extends a value set is not compared with it (no problem, no notice) |
-| Stored values against a list | every stored value must name exactly one known value | a value set is open: an unmatched stored value is a notice unless `complete: true`; `retired: true` on a value |
-| Role names | `entity`, `foreign-key`; `instances` and `reference` are also accepted | `instances`, `reference`; `entity` and `foreign-key` are also accepted (a notice) |
-| Derived links | the rule above applies | the rule above applies |
-| Measure `inputs` | attributes and measures | properties and measures |
-
-The two role names `instances` and `reference` are valid in a draft-1 file too:
-they are new spellings no old file uses, so draft 1 gained them in place.
-`meaning.schema.json` accepts them and is otherwise the draft-1 schema. A reader
-takes its schema and its rule code from the same release; a reader that does not
-know `instances` must not validate with a schema that does.
-
-A file uses the word *property* in one sense only, and its `format` says which:
-a draft-1 file says `kind: attribute` and `property:`, a draft-2 file says
-`kind: property` and `field:`. A word of the other format is refused by the
-schema and reported beside it, with the rule `format-word`, naming the format the
-word belongs to (`kind property belongs to meaning/draft-2; in meaning/draft-1 it
-is written attribute`).
+- A deprecated concept still resolves and keeps every rule it had; it is not
+  deleted, so pinned references keep working.
+- A reference to a deprecated concept from another concept is reported as a
+  notice (`deprecated-concept`), naming `replaced-by` when there is one.
+- `replaced-by` is allowed only with `deprecated: true`, must resolve, and must
+  not name a deprecated concept or the concept itself.
+- A deprecated concept never becomes undeprecated under the same id.
 
 ## What a checker reports
 
 Errors:
 
-1. a file that breaks the schema of its format, or whose `format` is neither
-   identifier (rule `schema`);
-2. a word of the other format (`format-word`), and files of one graph in two
-   formats (`format-mixed`);
-3. a reference that does not resolve (unknown concept, unknown repository, a
+1. a file that breaks the schema, or whose `format` is not `meaning/draft-2`
+   (rule `schema`);
+2. a reference that does not resolve (unknown concept, unknown repository, a
    pin that cannot be fetched, a remote repository without a pin);
-4. mixed pins for one repository;
-5. `of`, `values-of` or `units-of` naming a concept that is not an entity or a
+3. mixed pins for one repository;
+4. `of`, `values-of` or `units-of` naming a concept that is not an entity or a
    value set;
-6. `extends` joining incompatible kinds, or forming a cycle;
-7. `values-of` or `units-of` that changes what its parent names;
-8. a unit that does not name exactly one value of its `units-of` concept;
-9. `inputs` that are not properties or measures; `dimensions` that are not
+5. `extends` joining incompatible kinds, or forming a cycle;
+6. `values-of` or `units-of` that changes what its parent names;
+7. a unit that does not name exactly one value of its `units-of` concept;
+8. `inputs` that are not properties or measures; `dimensions` that are not
    dimensions or properties;
-10. `sum`, `count` or `average` on a ratio, stated or inherited through
-    `extends`;
-11. a duplicate concept id, value id, source id, or a word naming two values
+9. `sum`, `count` or `average` on a ratio, stated or inherited through
+   `extends`;
+10. a duplicate concept id, value id, source id, or a word naming two values
     (in any language);
-12. a `source` that is not declared in the file;
-13. a binding to an unlisted module, a missing record type or field, another
-    repository, or one whose role does not fit the model.
+11. a `source` that is not declared in the file;
+12. a binding to an unlisted module, a missing record type or field, another
+    repository, or one whose role does not fit the model;
+13. `transitions` or `initial` that name an unknown value, repeat a `from` or a
+    target, or change a value to itself (rule `transition`);
+14. `inverse` on a concept without `values-of`, or whose words repeat the
+    concept's own (rule `inverse`);
+15. `replaced-by` without `deprecated: true`, or naming the concept itself or a
+    deprecated concept (rule `deprecation`).
 
-Notices, which never change a verdict: `earlier-format` (one for each file of
-the checked graph that is in `meaning/draft-1`, none for a pinned graph; the file
-is read in full), `earlier-role-name` (one per
-draft-2 file that uses `entity` or `foreign-key`), `unknown-value` (a stored
-value that matches no value of an open list), `retired-value` (a stored value or
-a `unit` that names a retired value).
+Notices, which never change a verdict: `unknown-value` (a stored value that
+matches no value of an open list), `retired-value` (a stored value or a `unit`
+that names a retired value), `deprecated-concept` (a reference to a deprecated
+concept).
 
 A dataset check of stored values refuses a file whose format it does not know
 before it reads any binding, so that it cannot pass a file with nothing checked.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Meaning file, draft 2",
-  "description": "A meaning file says what the data in a dataset means: concepts with labels per language, synonyms, a description, and bindings to ModelSpec record types and fields. Format meaning/draft-2: it may change before meaning/1. A concept is an entity, a property, a measure, a dimension or a value-set (a list of known values); bindings name a ModelSpec record type and field. Concept references are either a bare concept id (same repository) or meaning://{host}/{org}/{repo}/{concept-id}, optionally pinned with ?ref=<git-ref>. Rules that need more than one concept (extends joins compatible kinds only, of, values-of and units-of name entities or value sets, measure inputs and dimensions, ratios are never summed, binding roles match the model) are checked by tooling, not by this schema. The earlier format, meaning/draft-1, has its own schema, meaning.schema.json.",
+  "title": "Meaning file",
+  "description": "A meaning file says what the data in a dataset means: concepts with labels per language, synonyms, a description, and bindings to ModelSpec record types and fields. Format meaning/draft-2: it may change before meaning/1. A concept is an entity, a property, a measure, a dimension or a value-set (a list of known values); bindings name a ModelSpec record type and field. Concept references are a bare concept id or meaning:///{concept-id} (same repository), or meaning://{host}/{org}/{repo}/{concept-id}, optionally pinned with ?ref=<git-ref>. Rules that need more than one concept (extends joins compatible kinds only, of, values-of and units-of name entities or value sets, measure inputs and dimensions, ratios are never summed, binding roles match the model) are checked by tooling, not by this schema. This is the only meaning-file format; meaning/draft-1 was withdrawn on 2026-10-27.",
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "id", "name", "description", "concepts"],
@@ -71,8 +71,8 @@
     },
     "conceptRef": {
       "type": "string",
-      "description": "A bare concept id in the same repository, or meaning://{host}/{org}/{repo}/{concept-id}[?ref=<git-ref>].",
-      "pattern": "^([a-z][a-z0-9]*(-[a-z][a-z0-9]*)*|meaning://[A-Za-z0-9.-]+(/[A-Za-z0-9._-]+)+/[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*(\\?ref=[A-Za-z0-9._/-]+)?)$"
+      "description": "A bare concept id or meaning:///{concept-id} in the same repository, or meaning://{host}/{org}/{repo}/{concept-id}[?ref=<git-ref>].",
+      "pattern": "^([a-z][a-z0-9]*(-[a-z][a-z0-9]*)*|meaning:///[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*|meaning://[A-Za-z0-9.-]+(/[A-Za-z0-9._-]+)+/[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*(\\?ref=[A-Za-z0-9._/-]+)?)$"
     },
     "modelRef": {
       "type": "string",
@@ -88,11 +88,11 @@
         "field": {
           "type": "string",
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
-          "description": "A field of that record type. Kept separate from the reference because modelspec:// fragments address enum values only. Written property in meaning/draft-1."
+          "description": "A field of that record type. Kept separate from the reference because modelspec:// fragments address enum values only."
         },
         "role": {
-          "enum": ["instances", "entity", "identifier", "display-name", "reference", "foreign-key", "value"],
-          "description": "What the binding holds. instances (earlier name entity): the rows of the ModelSpec record type are instances of this concept (no field). identifier: the field is the record type's key. display-name: the field is the name people know an instance by. reference (earlier name foreign-key): the field is a reference to the record type whose rows are instances of this concept (or of the concept named by values-of). value: the field holds this concept's value. The earlier names are accepted and reported as a notice."
+          "enum": ["instances", "identifier", "display-name", "reference", "value"],
+          "description": "What the binding holds. instances: the rows of the ModelSpec record type are instances of this concept (no field). identifier: the field is the record type's key. display-name: the field is the name people know an instance by. reference: the field is a reference to the record type whose rows are instances of this concept (or of the concept named by values-of). value: the field holds this concept's value."
         },
         "match": {
           "type": "string",
@@ -103,7 +103,7 @@
       },
       "allOf": [
         {
-          "if": { "properties": { "role": { "enum": ["instances", "entity"] } } },
+          "if": { "properties": { "role": { "const": "instances" } } },
           "then": { "not": { "required": ["field"] } },
           "else": { "required": ["field"] }
         },
@@ -158,6 +158,15 @@
         "note": { "type": "string", "minLength": 1 }
       }
     },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "$ref": "#/$defs/valueId" },
+        "to": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/valueId" } }
+      }
+    },
     "concept": {
       "type": "object",
       "additionalProperties": false,
@@ -177,7 +186,12 @@
         "complete": { "type": "boolean", "description": "Only on a value-set: true when the list is all the values there are (the days of the week). A stored value that matches nothing is then an error; without it, it is reported as unknown." },
         "measure": { "$ref": "#/$defs/measure" },
         "source": { "$ref": "#/$defs/fileId", "description": "Provenance: id of an entry in sources, when the data comes from outside the dataset. Allowed on any kind." },
-        "bindings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/binding" } }
+        "bindings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/binding" } },
+        "transitions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/transition" }, "description": "Only on a value-set: the possible changes between its own values. A change not listed is not possible. Never inherited." },
+        "initial": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/valueId" }, "description": "Only on a value-set: the values a first recorded value may take. Never inherited." },
+        "inverse": { "type": "object", "additionalProperties": false, "required": ["labels"], "properties": { "labels": { "$ref": "#/$defs/labels" }, "synonyms": { "$ref": "#/$defs/words" } }, "description": "Words for the reverse direction of a property or dimension with values-of (parent: inverse Children). No id and no address." },
+        "deprecated": { "const": true, "description": "The concept is deprecated: it still resolves and keeps its rules, and references to it are reported as a notice. Never removed once set." },
+        "replaced-by": { "$ref": "#/$defs/conceptRef", "description": "Only with deprecated: true: the concept to use instead." }
       },
       "allOf": [
         {
@@ -189,15 +203,15 @@
           "if": { "properties": { "kind": { "const": "value-set" } } },
           "then": {
             "required": ["values"],
-            "not": { "anyOf": [{ "required": ["bindings"] }, { "required": ["values-of"] }, { "required": ["units-of"] }, { "required": ["unit"] }] }
+            "not": { "anyOf": [{ "required": ["bindings"] }, { "required": ["values-of"] }, { "required": ["units-of"] }, { "required": ["unit"] }, { "required": ["inverse"] }] }
           },
-          "else": { "not": { "anyOf": [{ "required": ["values"] }, { "required": ["complete"] }] } }
+          "else": { "not": { "anyOf": [{ "required": ["values"] }, { "required": ["complete"] }, { "required": ["transitions"] }, { "required": ["initial"] }] } }
         },
         {
           "if": { "properties": { "kind": { "const": "entity" } } },
           "then": {
             "not": { "anyOf": [{ "required": ["values-of"] }, { "required": ["units-of"] }, { "required": ["unit"] }] },
-            "properties": { "bindings": { "type": "array", "items": { "type": "object", "properties": { "role": { "enum": ["instances", "entity", "identifier", "display-name", "reference", "foreign-key"] } } } } }
+            "properties": { "bindings": { "type": "array", "items": { "type": "object", "properties": { "role": { "enum": ["instances", "identifier", "display-name", "reference"] } } } } }
           }
         },
         {
@@ -210,8 +224,16 @@
         {
           "if": { "properties": { "kind": { "enum": ["property", "dimension"] } } },
           "then": {
-            "properties": { "bindings": { "type": "array", "items": { "type": "object", "properties": { "role": { "enum": ["value", "reference", "foreign-key"] } } } } }
+            "properties": { "bindings": { "type": "array", "items": { "type": "object", "properties": { "role": { "enum": ["value", "reference"] } } } } }
           }
+        },
+        {
+          "if": { "properties": { "kind": { "enum": ["entity", "measure"] } } },
+          "then": { "not": { "required": ["inverse"] } }
+        },
+        {
+          "if": { "not": { "required": ["deprecated"] } },
+          "then": { "not": { "required": ["replaced-by"] } }
         }
       ]
     }

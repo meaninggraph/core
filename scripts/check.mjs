@@ -3,18 +3,18 @@
 //   node scripts/check.mjs [directory]     (default: the repository root)
 //
 // Every *.meaning.yaml directly in the directory (subdirectories are not
-// searched, see FORMAT.md) is validated against the schema of its own format
-// (meaning.schema.json for meaning/draft-1, meaning.draft-2.schema.json for
-// meaning/draft-2, found beside it), then the cross-concept rules of
-// scripts/lib/meaning.mjs run over all of them as one repository: the files
-// share one format, references resolve, extends joins compatible kinds without
-// a cycle, values-of and units-of name entities or value sets, measures and
-// ratios are consistent, ids and values are unique. On top of that come the
-// rules of this repository alone: every file is CC0-1.0, there are no bindings
-// (they belong to datasets), no meaning file hides in a subdirectory, and one
-// word does not name two unrelated concepts. Findings that are not problems (a
-// file in the earlier format) are printed to standard error as notices and
-// never change the exit status.
+// searched, see FORMAT.md) is validated against meaning.draft-2.schema.json,
+// the schema of the only format, then the cross-concept rules of
+// scripts/lib/meaning.mjs run over all of them as one repository: references
+// resolve, extends joins compatible kinds without a cycle, values-of and
+// units-of name entities or value sets, measures and ratios are consistent,
+// ids and values are unique, transitions, inverse words and deprecation are
+// well formed. On top of that come the rules of this repository alone: every
+// file is CC0-1.0, there are no bindings (they belong to datasets), no meaning
+// file hides in a subdirectory, and one word does not name two unrelated
+// concepts. Findings that are not problems (a reference to a deprecated
+// concept) are printed to standard error as notices and never change the exit
+// status.
 import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,7 +42,7 @@ export function checkCore(dir = root) {
   if (local.files.length === 0) problems.push('no *.meaning.yaml file in the repository root');
   if (!existsSync(join(dir, 'LICENSE'))) problems.push('LICENSE is missing');
   problems.push(...hiddenMeaningFiles(dir).map((path) => `${path}: meaning files are read from the repository root only; move it there`));
-  const report = checkMeaningReport({ local, resolve, schemaPath: join(dir, 'meaning.schema.json'), selfRepo: coreRepo });
+  const report = checkMeaningReport({ local, resolve, schemaPath: join(dir, 'meaning.draft-2.schema.json'), selfRepo: coreRepo });
   problems.push(...report.problems.map(({ message }) => message.replaceAll(`${dir}/`, '')));
   const notices = report.notices.map(({ message }) => message.replaceAll(`${dir}/`, ''));
   for (const { path, doc } of local.files) {
