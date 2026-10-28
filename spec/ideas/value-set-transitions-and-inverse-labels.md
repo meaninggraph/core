@@ -1,11 +1,11 @@
 ---
 format: https://specscore.md/idea-specification
-status: Draft
+status: Approved
 ---
 
 # Idea: Value-set transitions, inverse labels and concept deprecation
 
-**Status:** Draft
+**Status:** Approved
 **Date:** 2026-10-27
 **Owner:** trakhimenok
 **Promotes To:** —
@@ -77,11 +77,7 @@ Schema: like `values` and `complete`, `transitions` and `initial` are allowed on
 
 ### Format identifier
 
-The keys are added to `meaning/draft-2`, not to a new `meaning/draft-3`.
-
-- **The owner's words**, 2026-10-27 (conversation, not published), asked whether to extend draft-2 or wait for draft-3: "I delegate this decision to you, I don't mind either".
-- **On record:** `meaninggraph/cli` at `c488f86` (23 October 2026) reads and validates only `meaning/draft-1`; no meaning file in this repository at `3b5f1ab` declares `meaning/draft-2`; FORMAT.md says published graphs stay in draft-1 until readers are released.
-- **Recorder's account:** with no released reader and no published graph in draft-2, adding optional keys to it breaks nobody, while a draft-3 would make every reader handle three formats and delay the first release that reads value sets. Draft-2 is still a draft and may change before `meaning/1`. The decision record for this idea states the choice when the format changes.
+Superseded by the owner's request for one format: `meaning/draft-2` is the only format and `meaning/draft-1` is withdrawn. Recorded in [decision 0004](../decisions/0004-one-format-and-value-set-transitions.md).
 
 ## Alternatives Considered
 

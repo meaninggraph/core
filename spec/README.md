@@ -12,8 +12,8 @@ the format, kept in the [SpecScore](https://specscore.md) form.
 | [`ideas/`](ideas/README.md) | Proposed format changes not yet decided; an accepted idea becomes a decision record |
 
 An idea or a decision record does not change the format. The format in force is what
-`FORMAT.md` and the schema files beside it say (`meaning.schema.json` for
-`meaning/draft-1`, `meaning.draft-2.schema.json` for `meaning/draft-2`); a
+`FORMAT.md` and the schema beside it say (`meaning.draft-2.schema.json` for
+`meaning/draft-2`, the only format); a
 decision takes effect when they are changed to match it.
 
 ## Open Questions

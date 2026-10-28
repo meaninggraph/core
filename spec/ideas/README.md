@@ -10,7 +10,7 @@ Proposed changes to the meaning-file format. An accepted Idea is recorded as a [
 
 | Idea | Status | Date | Owner | Promotes To |
 |------|--------|------|-------|-------------|
-| [value-set-transitions-and-inverse-labels](value-set-transitions-and-inverse-labels.md) | Draft | 2026-10-27 | trakhimenok | — |
+| [value-set-transitions-and-inverse-labels](value-set-transitions-and-inverse-labels.md) | Approved | 2026-10-27 | trakhimenok | — |
 
 ## Open Questions
 

@@ -1,14 +1,10 @@
 # MeaningGraph core concepts
 
 Concepts that are not specific to any dataset, in the meaning-file format
-`meaning/draft-1`. [`FORMAT.md`](FORMAT.md) is the format reference: it describes
-the newer format, `meaning/draft-2` (JSON Schema:
-[`meaning.draft-2.schema.json`](meaning.draft-2.schema.json)), and says exactly
-how the earlier `meaning/draft-1` (JSON Schema:
-[`meaning.schema.json`](meaning.schema.json)) differs. Only this repository's
-checker reads `meaning/draft-2` so far; no released reader does yet, so the files
-here are still in `meaning/draft-1` and published graphs stay in it until the
-readers are released. A dataset's
+`meaning/draft-2`, the only format. [`FORMAT.md`](FORMAT.md) is the format
+reference and [`meaning.draft-2.schema.json`](meaning.draft-2.schema.json) its
+JSON Schema. The earlier format, `meaning/draft-1`, was withdrawn on 27 October
+2026 in a clean cut ([decision 0004](spec/decisions/0004-one-format-and-value-set-transitions.md)). A dataset's
 meaning file reuses these concepts by address, for example
 `meaning://github.com/meaninggraph/core/country?ref=<commit>`, and binds its own
 columns to them.
@@ -81,14 +77,14 @@ pin the version with `?ref=` and a full commit id:
   cache the checkout under its id.
 - To take newer concepts, change the id in every reference at once and re-run
   your checks.
-- The schemas are in the same checkout: `meaning.schema.json` (draft 1) at your
-  pin is the schema your concepts were written against. `meaning.draft-2.schema.json`
-  (draft 2) is in the checkout only from the commit that adds it; a pin to an
-  earlier commit has `meaning.schema.json` alone.
+- The schema is in the same checkout: `meaning.draft-2.schema.json` at your pin
+  is the schema your concepts were written against. A pin to a commit before
+  27 October 2026 names graphs in the withdrawn `meaning/draft-1`, which current
+  readers refuse; repin to a later commit.
 
 A concept's meaning never changes under the same id; a different meaning gets
-a new id, and old concepts are deprecated, not deleted, so pinned references
-keep resolving. [`FORMAT.md`](FORMAT.md) has the rest: required fields, case and
+a new id, and old concepts are marked `deprecated: true`, not deleted, so pinned
+references keep resolving. [`FORMAT.md`](FORMAT.md) has the rest: required fields, case and
 default rules, uniqueness, bindings and what a checker reports.
 
 ## Used in DataTug development
@@ -102,8 +98,8 @@ subsets, not the full ISO lists.
 
 ```sh
 npm ci
-npm run check   # every *.meaning.yaml against the schema of its format, then the cross-concept rules
-npm test        # the checks fail on each kind of broken file; the conformance cases of both formats; the ModelSpec reader reads both spellings
+npm run check   # every *.meaning.yaml against the schema, then the cross-concept rules
+npm test        # the checks fail on each kind of broken file; the conformance cases of the format; the ModelSpec reader reads both spellings
 ```
 
 CI runs both on every pull request (`.github/workflows/check.yml`). Besides the
@@ -119,11 +115,12 @@ not copies any more, and neither repository is the source of the other:
 
 - `scripts/lib/meaning.mjs` is maintained here. Where it checks a binding
   against a model it reads the model's record types, members and references in
-  the vocabulary the model's format identifier names. It reads both meaning
-  formats, `meaning/draft-1` and `meaning/draft-2` (see `FORMAT.md`); the
-  functions it exported before (`checkMeaning`, `checkoutGit`, `indexConcepts`,
-  `pinsOf`, and the rest) keep their shapes, and `checkMeaningReport`,
-  `deriveLinks` and `valueCoverageReport` are added. chinookdb keeps its own, older copy of
+  the vocabulary the model's format identifier names. It reads the one meaning
+  format, `meaning/draft-2` (see `FORMAT.md`); `checkMeaning`, `checkoutGit`,
+  `indexConcepts`, `pinsOf`, `checkMeaningReport`, `deriveLinks` and
+  `valueCoverageReport` keep their shapes, and the draft-1 helpers (`draft1`,
+  `draft2SchemaPath`) are gone: `schemaPath` names `meaning.draft-2.schema.json`
+  directly. chinookdb keeps its own, older copy of
   the file and checks its meaning file with the `meaninggraph` command-line
   tool, so the two no longer move together.
 - `scripts/lib/modelspec.mjs` is the ModelSpec reader of the
