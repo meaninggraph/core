@@ -412,8 +412,11 @@ const classificationKeys = ['data-role', 'consistency'];
 const dataRoleKinds = ['entity', 'value-set'];
 const consistencyKinds = ['entity', 'value-set', 'property', 'dimension'];
 const fieldKinds = ['property', 'dimension'];
+const classifiedKinds = [...consistencyKinds, 'measure'];
 function classificationFindings(concept, kind) {
   const found = [];
+  // An unknown or missing kind is the schema's to refuse; a message here would name a kind that does not exist.
+  if (!classifiedKinds.includes(kind)) return found;
   if (Object.hasOwn(concept, 'data-role') && !dataRoleKinds.includes(kind)) found.push({ rule: 'data-role', message: `data-role says what the records of an entity or a value-set are, and ${an(concept.kind)} has none of its own; give the data role to the entity it belongs to` });
   if (Object.hasOwn(concept, 'consistency') && !consistencyKinds.includes(kind)) found.push({ rule: 'consistency', message: `${an(concept.kind)} carries no consistency: it is computed, not held by each dataset; give consistency to the properties it is computed from` });
   if (fieldKinds.includes(kind) && concept.consistency?.expectation === 'partial') found.push({ rule: 'consistency', message: `expectation partial says that records may be present in some instances and absent from others, and ${an(concept.kind)} is one field, not a set of records; use identical, normalized, instance-specific or unrestricted` });

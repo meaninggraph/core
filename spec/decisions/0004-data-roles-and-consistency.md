@@ -1,11 +1,11 @@
 ---
 format: https://specscore.md/decision-specification
-status: In Review
+status: Approved
 ---
 
 # Decision: Data roles and consistency
 
-**Status:** In Review
+**Status:** Approved
 **Date:** 2026-11-07
 **Owner:** trakhimenok
 **Tags:** format,data-roles,consistency
@@ -87,7 +87,8 @@ From its section on MeaningGraph:
 **Recorder's account.** So the decision is that a meaning file can say, as reusable
 meaning, what the data of a concept is and where it is expected to agree, as two
 separate statements, and that it says nothing about any one deployment. The form
-below is the lead's; the owner has not seen it. It is what `FORMAT.md` says in
+below is the lead's; the owner saw a summary of it, not this text (see Approval).
+It is what `FORMAT.md` says in
 [Data roles and consistency](../../FORMAT.md#data-roles-and-consistency):
 
 - An entity or a value set may carry `data-role`: `reference`, `master`,
@@ -103,11 +104,26 @@ below is the lead's; the owner has not seen it. It is what `FORMAT.md` says in
   or a database.
 - Both keys are `meaning/draft-2` only.
 
+### Approval
+
+**On record**, 7 November 2026, a question in the lead's session (not published). It
+summarised the two keys; gave `countries` (reference, global, identical) and `orders`
+(transactional, instance-specific) as examples; said that a project's own rules
+override these defaults; and said that only `meaning/draft-2` carries them. The owner
+chose "Land as is", over converting the core graph now or holding the branch.
+
+**Recorder's account.** That approves landing this branch as it stood, on the summary
+the question gave. The owner did not read this record or `FORMAT.md`. The choices
+listed below were accepted by that landing as a whole, not reviewed one by one; several
+of them (for example that the fields of a `partial` entity are `identical`) were not in
+the question. The question showed no `partial` entity; the record and `FORMAT.md` use
+`product` (master, application, partial), which it did not show.
+
 ### Not decided by the owner
 
 Recorder's notes. The owner wrote what is quoted above and nothing else about this
-repository. The points below are not decided by him, and approving this record
-approves none of them. Each says whose choice it is.
+repository. The points below were chosen by the lead or the recorder, not by him. Each
+says whose choice it is.
 
 - **The key names and the spellings of their values.** `data-role`,
   `consistency`, `scope`, `expectation` and every value are the lead's choice. The
@@ -144,8 +160,8 @@ approves none of them. Each says whose choice it is.
   them on converted copies of those concepts.
 - **The rule names.** `data-role` and `consistency`, reported beside the schema's
   refusal, are the recorder's choice.
-- **The status.** In Review until the owner approves this text is the lead's
-  choice.
+- **The status.** In Review until the owner approved it, then Approved
+  (see Approval above).
 
 ## Rationale
 
@@ -200,6 +216,11 @@ Recorder's account, written on 7 November 2026.
   which apply the inheritance rules.
 - No meaning file is edited. `country`, `currency` and `product` carry the keys
   when the core graph is converted to `meaning/draft-2`.
+- **Open: `instance-specific` and `unrestricted`.** A tool that reads both as "a
+  difference is not a finding" cannot tell them apart. A field with no consistency of
+  its own takes its entity's, so every field of an `instance-specific` entity is
+  "expected to differ", codes included. What each means to a comparing tool is to be
+  settled before DataTug reads these defaults.
 
 ## Observed Consequences
 

@@ -960,6 +960,13 @@ test('C-05: consistency on a measure is refused by the schema and by the rule co
   refuse(report, 'consistency', 'schema');
   assert.match(message(report.problems), /concept m: consistency: a measure carries no consistency: it is computed, not held by each dataset/);
 });
+test('C-05a: on an unknown or a missing kind, data-role and consistency are left to the schema', () => {
+  for (const found of [concept('w', 'widget', { 'data-role': 'reference', ...agree('global', 'identical') }), { id: 'n', 'data-role': 'reference', ...agree('global', 'identical') }]) {
+    const report = kinds(found);
+    assert.ok(report.problems.some((problem) => problem.rule === 'schema'), found.id);
+    assert.deepEqual(report.problems.filter((problem) => ['data-role', 'consistency'].includes(problem.rule)), [], found.id);
+  }
+});
 test('C-06: expectation partial on a property or a dimension is refused by the schema and by the rule consistency', () => {
   for (const kind of ['property', 'dimension']) {
     const report = kinds(concept('e', 'entity'), concept('f', kind, { of: 'e', ...agree('application', 'partial') }));
