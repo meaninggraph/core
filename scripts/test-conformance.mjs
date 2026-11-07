@@ -12,7 +12,8 @@
 // one for effectiveValues, one for a concepts that is no list, one for format-word, one for the words of the messages
 // about a draft-1 file, the full F-03 and F-04 test, and V-20 to V-30 for the draft-1 originals of the twins. D-21 to
 // D-24, S-10 and X-13 are not cases of the contract either: they were added with the follow-ups of
-// meaninggraph/core#9 and are numbered after the cases of their group in this file. CC0-1.0.
+// meaninggraph/core#9 and are numbered after the cases of their group in this file. The C cases (data roles and
+// consistency, decision 0004) are not cases of the contract either. CC0-1.0.
 //
 // The Node checker has no severities: the four notices of the contract (earlier-format, earlier-role-name,
 // unknown-value, retired-value) are its separate channel, and "Accept" means no problem and none of the four.
@@ -23,7 +24,7 @@ import { join } from 'node:path';
 import { after, test } from 'node:test';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { checkCore, root } from './check.mjs';
-import { checkMeaning, checkMeaningReport, effectiveValues, extendsCompatibility, indexConcepts, measureDimensionKinds, measureInputKinds, loadMeaningDir, pinsOf, valueCoverageProblems, valueCoverageReport, checkoutGit } from './lib/meaning.mjs';
+import { checkMeaning, checkMeaningReport, effectiveConsistency, effectiveDataRole, effectiveValues, extendsCompatibility, indexConcepts, measureDimensionKinds, measureInputKinds, loadMeaningDir, pinsOf, valueCoverageProblems, valueCoverageReport, checkoutGit } from './lib/meaning.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'meaning-conformance-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
@@ -919,4 +920,123 @@ test('effectiveValues is unchanged for draft-1 and reads a value set through val
   const document = file(d2, [vs('v'), concept('p', 'property', { 'values-of': 'v' })], { models: false });
   const local = loadMeaningDir(directory({ 'shop.meaning.yaml': document }), self);
   assert.deepEqual(effectiveValues(local.concepts.get('p').concept, local, () => ({ error: 'none' })).map((value) => value.id), ['a', 'b']);
+});
+
+// ---- C: data roles and consistency (decision 0004) ------------------------------------------------------------------------
+
+const roles = ['reference', 'master', 'configuration', 'transactional', 'event'];
+const expectations = ['identical', 'normalized', 'partial', 'instance-specific', 'unrestricted'];
+const agree = (scope, expectation) => ({ consistency: { scope, expectation } });
+test('C-01: a value set, an entity, a property and a dimension that state a data role and consistency are accepted', () => {
+  accept(kinds(
+    vs('country', { 'data-role': 'reference', ...agree('global', 'identical') }),
+    concept('product', 'entity', { 'data-role': 'master', ...agree('application', 'partial') }),
+    concept('product-name', 'property', { of: 'product', ...agree('application', 'normalized') }),
+    concept('product-region', 'dimension', { of: 'product', ...agree('application', 'instance-specific') }),
+  ));
+});
+test('C-02: every data role is accepted on an entity and on a value set, alone or with consistency', () => {
+  for (const role of roles) {
+    accept(kinds(concept('e', 'entity', { 'data-role': role }), vs('v', { 'data-role': role, ...agree('application', 'identical') })));
+  }
+});
+test('C-03: every expectation in either scope is accepted on an entity; on a property and a dimension, every one but partial', () => {
+  for (const scope of ['global', 'application']) {
+    for (const expectation of expectations) {
+      accept(kinds(concept('e', 'entity', agree(scope, expectation))));
+      if (expectation !== 'partial') accept(kinds(concept('e', 'entity'), concept('p', 'property', { of: 'e', ...agree(scope, expectation) }), concept('d', 'dimension', { of: 'e', ...agree(scope, expectation) })));
+    }
+  }
+});
+test('C-04: data-role on a property, a dimension or a measure is refused by the schema and by the rule data-role', () => {
+  for (const found of [concept('p', 'property', { 'data-role': 'reference' }), concept('d', 'dimension', { 'data-role': 'master' }), measure('m', { 'data-role': 'event' })]) {
+    const report = kinds(found);
+    refuse(report, 'data-role', 'schema');
+    assert.match(message(report.problems.filter((problem) => problem.rule === 'data-role')), new RegExp(`concept ${found.id}: data-role: data-role says what the records of an entity or a value-set are, and an? ${found.kind} has none of its own`));
+  }
+});
+test('C-05: consistency on a measure is refused by the schema and by the rule consistency', () => {
+  const report = kinds(measure('m', agree('global', 'identical')));
+  refuse(report, 'consistency', 'schema');
+  assert.match(message(report.problems), /concept m: consistency: a measure carries no consistency: it is computed, not held by each dataset/);
+});
+test('C-06: expectation partial on a property or a dimension is refused by the schema and by the rule consistency', () => {
+  for (const kind of ['property', 'dimension']) {
+    const report = kinds(concept('e', 'entity'), concept('f', kind, { of: 'e', ...agree('application', 'partial') }));
+    refuse(report, 'consistency', 'schema');
+    assert.match(message(report.problems.filter((problem) => problem.rule === 'consistency')), new RegExp(`concept f: consistency: expectation partial says that records may be present in some instances and absent from others, and an? ${kind} is one field`));
+  }
+});
+test('C-07: a value outside the lists, or a consistency that is not exactly scope and expectation, is refused by the schema', () => {
+  const cases = {
+    'data role unknown (a concept without one is not classified)': concept('e', 'entity', { 'data-role': 'unknown' }),
+    'scope tenant': concept('e', 'entity', agree('tenant', 'identical')),
+    'expectation subset': concept('e', 'entity', agree('application', 'subset')),
+    'no scope': concept('e', 'entity', { consistency: { expectation: 'identical' } }),
+    'no expectation': concept('e', 'entity', { consistency: { scope: 'global' } }),
+    'an authoritative instance': concept('e', 'entity', { consistency: { scope: 'application', expectation: 'identical', authority: 'factory-1' } }),
+    'a list of tenants': concept('e', 'entity', { consistency: { scope: 'application', expectation: 'identical', tenants: ['north'] } }),
+    'consistency as a word': concept('e', 'entity', { consistency: 'identical' }),
+  };
+  for (const [name, found] of Object.entries(cases)) {
+    const report = kinds(found);
+    assert.deepEqual(rules(report.problems), ['schema'], `${name}\n${message(report.problems)}`);
+  }
+  assert.match(message(kinds(cases['an authoritative instance']).problems), /\/concepts\/0\/consistency must NOT have additional properties \(authority\)/);
+});
+test('C-08: data-role and consistency in a draft-1 file are a format-word problem beside the schema', () => {
+  const report = run(file(d1, [concept('e', 'entity', { 'data-role': 'reference', ...agree('global', 'identical') })], { models: false }));
+  refuse(report, 'format-word', 'schema');
+  const words = message(report.problems.filter((found) => found.rule === 'format-word'));
+  assert.match(words, /concept e: format-word: data-role belongs to meaning\/draft-2/);
+  assert.match(words, /concept e: format-word: consistency belongs to meaning\/draft-2/);
+  assert.equal(rules(report.problems).includes('data-role'), false, 'the rules of draft 2 do not run on a draft-1 file');
+});
+test('C-09: extends passes data-role and consistency on, each only when the concept has none of its own', () => {
+  const document = file(d2, [
+    vs('country', { 'data-role': 'reference', ...agree('global', 'identical') }),
+    concept('country-table', 'entity', { extends: 'country' }),
+    concept('sales-region', 'entity', { extends: 'country', ...agree('application', 'instance-specific') }),
+    concept('configured-country', 'entity', { extends: 'country', 'data-role': 'configuration' }),
+    concept('unclassified', 'entity'),
+    concept('name', 'property', agree('global', 'normalized')),
+    concept('short-name', 'property', { extends: 'name' }),
+  ], { models: false });
+  accept(run(document));
+  const local = loadMeaningDir(directory({ 'shop.meaning.yaml': document }), self);
+  const resolve = () => ({ error: 'none' });
+  const at = (id) => local.concepts.get(id).concept;
+  const role = (id) => { const found = effectiveDataRole(at(id), local, resolve); return found && [found.dataRole, found.from.id]; };
+  const agreement = (id) => { const found = effectiveConsistency(at(id), local, resolve); return found && [found.scope, found.expectation, found.from.id]; };
+  assert.deepEqual(role('country-table'), ['reference', 'country']);
+  assert.deepEqual(agreement('country-table'), ['global', 'identical', 'country']);
+  assert.deepEqual(role('sales-region'), ['reference', 'country']);
+  assert.deepEqual(agreement('sales-region'), ['application', 'instance-specific', 'sales-region']);
+  assert.deepEqual(role('configured-country'), ['configuration', 'configured-country']);
+  assert.deepEqual(agreement('configured-country'), ['global', 'identical', 'country']);
+  assert.equal(role('unclassified'), null);
+  assert.equal(agreement('unclassified'), null);
+  assert.deepEqual(agreement('short-name'), ['global', 'normalized', 'name']);
+  assert.equal(role('short-name'), null, 'a property has no data role');
+});
+test('C-10: a property with no consistency follows its entity, and a partial entity\'s fields are identical', () => {
+  const document = file(d2, [
+    concept('product', 'entity', { 'data-role': 'master', ...agree('application', 'partial') }),
+    concept('product-name', 'property', { of: 'product' }),
+    concept('product-price', 'property', { of: 'product', ...agree('application', 'instance-specific') }),
+    concept('setting', 'entity', { 'data-role': 'configuration', ...agree('application', 'unrestricted') }),
+    concept('setting-value', 'dimension', { of: 'setting' }),
+    concept('loose', 'property'),
+    measure('product-count', { of: 'product' }, { aggregation: 'count' }),
+  ], { models: false });
+  accept(run(document));
+  const local = loadMeaningDir(directory({ 'shop.meaning.yaml': document }), self);
+  const resolve = () => ({ error: 'none' });
+  const agreement = (id) => { const found = effectiveConsistency(local.concepts.get(id).concept, local, resolve); return found && [found.scope, found.expectation, found.from.id]; };
+  assert.deepEqual(agreement('product'), ['application', 'partial', 'product']);
+  assert.deepEqual(agreement('product-name'), ['application', 'identical', 'product']);
+  assert.deepEqual(agreement('product-price'), ['application', 'instance-specific', 'product-price']);
+  assert.deepEqual(agreement('setting-value'), ['application', 'unrestricted', 'setting']);
+  assert.equal(agreement('loose'), null);
+  assert.equal(agreement('product-count'), null, 'a measure has no consistency');
 });
