@@ -7,8 +7,8 @@
 // properties and measures and grouped by dimensions and properties; a ratio is never summed;
 // every modelspec:// binding must name an existing record type and field that fits its role
 // (identifier and display-name on the concept's own record type, one instances binding per
-// concept, a reference to the record type of its target concept); and values must cover the
-// data they describe.
+// concept, a reference to the record type of its target concept); data-role and consistency stand
+// on the kinds that may carry them; and values must cover the data they describe.
 //
 // Both formats are read through one vocabulary (FORMAT.md, "Reading both formats"): the kind
 // attribute is read as property, the binding key property as field, the role entity as
@@ -383,6 +383,7 @@ function formatWordFindings(doc, format) {
       if (concept.kind === 'property') found.push({ where, message: `kind property belongs to ${other}; in ${format} it is written attribute` });
       if (concept.kind === 'value-set') found.push({ where, message: `kind value-set belongs to ${other}` });
       if (Object.hasOwn(concept, 'complete')) found.push({ where, message: `complete belongs to ${other}` });
+      for (const key of classificationKeys) if (Object.hasOwn(concept, key)) found.push({ where, message: `${key} belongs to ${other}` });
       for (const value of Array.isArray(concept.values) ? concept.values : []) {
         if (value && typeof value === 'object' && Object.hasOwn(value, 'retired')) found.push({ where: `${where}: value ${value.id}`, message: `retired belongs to ${other}` });
       }
@@ -401,6 +402,49 @@ function formatWordFindings(doc, format) {
     }
   }
   return found;
+}
+
+// ---- data roles and consistency ---------------------------------------------------------------------------------
+// FORMAT.md, "Data roles and consistency". Reusable defaults for comparing a concept's data between datasets, in
+// meaning/draft-2 only. data-role is allowed on an entity or a value set; consistency on those and on a property or a
+// dimension; a measure carries neither, and partial is about records, which a property does not have.
+const classificationKeys = ['data-role', 'consistency'];
+const dataRoleKinds = ['entity', 'value-set'];
+const consistencyKinds = ['entity', 'value-set', 'property', 'dimension'];
+const fieldKinds = ['property', 'dimension'];
+const classifiedKinds = [...consistencyKinds, 'measure'];
+function classificationFindings(concept, kind) {
+  const found = [];
+  // An unknown or missing kind is the schema's to refuse; a message here would name a kind that does not exist.
+  if (!classifiedKinds.includes(kind)) return found;
+  if (Object.hasOwn(concept, 'data-role') && !dataRoleKinds.includes(kind)) found.push({ rule: 'data-role', message: `data-role says what the records of an entity or a value-set are, and ${an(concept.kind)} has none of its own; give the data role to the entity it belongs to` });
+  if (Object.hasOwn(concept, 'consistency') && !consistencyKinds.includes(kind)) found.push({ rule: 'consistency', message: `${an(concept.kind)} carries no consistency: it is computed, not held by each dataset; give consistency to the properties it is computed from` });
+  if (fieldKinds.includes(kind) && concept.consistency?.expectation === 'partial') found.push({ rule: 'consistency', message: `expectation partial says that records may be present in some instances and absent from others, and ${an(concept.kind)} is one field, not a set of records; use identical, normalized, instance-specific or unrestricted` });
+  return found;
+}
+
+// The data role of a concept: its own, else the nearest one along extends. Returns { dataRole, from } or null (not
+// classified). A measure has none.
+export function effectiveDataRole(concept, repo, resolve) {
+  if (!dataRoleKinds.includes(kindIn({ concept, repo }))) return null;
+  const node = inherited(concept, repo, 'data-role', resolve);
+  return node ? { dataRole: node.concept['data-role'], from: node.concept } : null;
+}
+
+// Where a concept's data is expected to agree: its own consistency, else the nearest one along extends (as a whole,
+// scope and expectation together). A property or a dimension with none follows the entity or value set its `of` names,
+// except that a partial entity's expectation is about its records: its fields are identical. Returns
+// { scope, expectation, from } (from: the concept that states it) or null. A measure has none.
+export function effectiveConsistency(concept, repo, resolve, seen = new Set()) {
+  const kind = kindIn({ concept, repo });
+  if (!consistencyKinds.includes(kind) || seen.has(concept)) return null;
+  seen.add(concept);
+  const node = inherited(concept, repo, 'consistency', resolve);
+  if (node) return { scope: node.concept.consistency.scope, expectation: node.concept.consistency.expectation, from: node.concept };
+  if (!fieldKinds.includes(kind) || !concept.of) return null;
+  const owner = resolveConcept(concept.of, repo, resolve);
+  const own = owner && effectiveConsistency(owner.concept, owner.repo, resolve, seen);
+  return own ? { ...own, expectation: own.expectation === 'partial' ? 'identical' : own.expectation } : null;
 }
 
 // A record type's key as a list. A model that gives it as anything else (key = 5, key = "Id") has no key to read.
@@ -497,7 +541,7 @@ export function checkMeaning({ notice, ...rest }) {
 
 // The same check with the rule of every finding: { problems, notices, links } where problems and notices are
 // lists of { rule, message } (the rule ids of the Go checker, plus format-mixed, format-word, earlier-format,
-// earlier-role-name and retired-value) and `links` is the derived-link list of deriveLinks when `derive` is set
+// earlier-role-name, retired-value, data-role and consistency) and `links` is the derived-link list of deriveLinks when `derive` is set
 // and there is no problem, else null (the links of a graph that fails the check are not defined).
 export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, models: givenModels, selfRepo, derive = false }) {
   const problems = [];
@@ -643,6 +687,7 @@ export function checkMeaningReport({ local, resolve: resolveOther, schemaPath, m
         const ratio = ratioInput(concept, local, resolve);
         if (ratio) add('ratio-aggregation', `${where}: aggregation ${aggregation} on a ratio (it is computed from the measure ${ratio}); a ratio is recomputed per group from its inputs, so its aggregation is none${from !== concept ? `; ${aggregation} is inherited from ${from.id}, state aggregation: none` : ''}`);
       }
+      if (format === draft2) for (const found of classificationFindings(concept, kindOf(concept, format))) add(found.rule, `${where}: ${found.rule}: ${found.message}`);
       if (concept.source && !sourceIds.has(concept.source)) add('undeclared-source', `${where}: source ${concept.source} is not declared in sources`);
       const valueIds = new Set();
       // A word names one value whatever the language: stored values are matched against every language.

@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { after, test } from 'node:test';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { checkCore, root } from './check.mjs';
-import { checkMeaning, createResolver, loadMeaningDir } from './lib/meaning.mjs';
+import { checkMeaningReport, checkMeaning, coreRepo, createResolver, effectiveConsistency, effectiveDataRole, loadMeaningDir } from './lib/meaning.mjs';
 import { parseHcl, serializeModel, toModelspecJson } from './lib/modelspec.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'meaning-core-'));
@@ -338,5 +338,43 @@ test('a name declared twice is still a duplicate, whatever it is called', () => 
     assert.throws(() => toModelspecJson(parseHcl(`record "${name}" {\n}\nentity "${name}" {\n}\n`), { id: 'm', name: 'm', version: '1' }), new RegExp(`duplicate entity "${name}"`));
     assert.throws(() => parseHcl(`record "A" {\n  ${name} = 1\n  ${name} = 2\n}\n`), new RegExp(`duplicate attribute ${name}`));
     assert.throws(() => toModelspecJson(parseHcl(`record "A" {\n  field "${name}" {\n  }\n  property "${name}" {\n  }\n}\n`), { id: 'm', name: 'm', version: '1' }), new RegExp(`duplicate property "${name}" in record "A"`));
+  }
+});
+
+// FORMAT.md, "Data roles and consistency", on this graph's own concepts. The graph is in meaning/draft-1, which has
+// neither key, so its files carry none until the graph is converted; this test converts the concepts the format page
+// names and checks that the annotations it shows are valid meaning/draft-2.
+test('the data roles and consistency that FORMAT.md shows for country, currency and product are valid draft 2', () => {
+  const files = Object.fromEntries(rootFiles.map((name) => [name, parseYaml(readFileSync(join(root, name), 'utf8'))]));
+  const take = (id, kind, extra = {}) => {
+    const { id: own, labels, synonyms, description, values } = concept(files, id);
+    return { id: own, kind, labels, ...(synonyms ? { synonyms } : {}), description, ...(kind === 'value-set' ? { values } : {}), ...extra };
+  };
+  const doc = {
+    format: 'meaning/draft-2', id: 'classified', name: 'Classified', description: 'Concepts of the core graph with data roles.', license: 'CC0-1.0',
+    concepts: [
+      take('country', 'value-set', { 'data-role': 'reference', consistency: { scope: 'global', expectation: 'identical' } }),
+      take('currency', 'value-set', { 'data-role': 'reference', consistency: { scope: 'global', expectation: 'identical' } }),
+      take('product', 'entity', { 'data-role': 'master', consistency: { scope: 'application', expectation: 'partial' } }),
+      take('product-name', 'property', { of: 'product' }),
+      take('product-model-code', 'property', { of: 'product' }),
+      take('product-description', 'property', { of: 'product', consistency: { scope: 'application', expectation: 'normalized' } }),
+    ],
+  };
+  const dir = join(scratch, `v${counter++}`);
+  mkdirSync(dir);
+  writeFileSync(join(dir, 'classified.meaning.yaml'), stringifyYaml(doc, { lineWidth: 0 }));
+  const local = loadMeaningDir(dir, coreRepo);
+  const resolve = () => ({ error: 'none' });
+  const report = checkMeaningReport({ local, resolve, schemaPath: join(root, 'meaning.schema.json'), selfRepo: coreRepo });
+  assert.deepEqual(report.problems, []);
+  assert.deepEqual(report.notices, []);
+  const at = (id) => local.concepts.get(id).concept;
+  assert.equal(effectiveDataRole(at('country'), local, resolve).dataRole, 'reference');
+  assert.equal(effectiveDataRole(at('product'), local, resolve).dataRole, 'master');
+  assert.deepEqual(effectiveConsistency(at('product-model-code'), local, resolve), { scope: 'application', expectation: 'identical', from: at('product') });
+  assert.deepEqual(effectiveConsistency(at('product-description'), local, resolve), { scope: 'application', expectation: 'normalized', from: at('product-description') });
+  for (const name of rootFiles) {
+    for (const found of files[name].concepts) assert.equal(Object.hasOwn(found, 'data-role') || Object.hasOwn(found, 'consistency'), false, `${name}: ${found.id} is in meaning/draft-1, which has no data roles`);
   }
 });

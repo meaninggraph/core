@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Meaning file, draft 2",
-  "description": "A meaning file says what the data in a dataset means: concepts with labels per language, synonyms, a description, and bindings to ModelSpec record types and fields. Format meaning/draft-2: it may change before meaning/1. A concept is an entity, a property, a measure, a dimension or a value-set (a list of known values); bindings name a ModelSpec record type and field. Concept references are either a bare concept id (same repository) or meaning://{host}/{org}/{repo}/{concept-id}, optionally pinned with ?ref=<git-ref>. Rules that need more than one concept (extends joins compatible kinds only, of, values-of and units-of name entities or value sets, measure inputs and dimensions, ratios are never summed, binding roles match the model) are checked by tooling, not by this schema. The earlier format, meaning/draft-1, has its own schema, meaning.schema.json.",
+  "description": "A meaning file says what the data in a dataset means: concepts with labels per language, synonyms, a description, and bindings to ModelSpec record types and fields. Format meaning/draft-2: it may change before meaning/1. A concept is an entity, a property, a measure, a dimension or a value-set (a list of known values); bindings name a ModelSpec record type and field. Concept references are either a bare concept id (same repository) or meaning://{host}/{org}/{repo}/{concept-id}, optionally pinned with ?ref=<git-ref>. Rules that need more than one concept (extends joins compatible kinds only, of, values-of and units-of name entities or value sets, measure inputs and dimensions, ratios are never summed, binding roles match the model) are checked by tooling, not by this schema. data-role and consistency are reusable defaults for comparing the data of a concept between datasets; facts of one deployment are not part of the format. The earlier format, meaning/draft-1, has its own schema, meaning.schema.json.",
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "id", "name", "description", "concepts"],
@@ -158,6 +158,16 @@
         "note": { "type": "string", "minLength": 1 }
       }
     },
+    "consistency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "expectation"],
+      "description": "Where the data of a concept is expected to agree between datasets. A reusable default: it never names an authoritative dataset, a tenant, an environment or a database, which are facts of a deployment and belong to the tool that compares.",
+      "properties": {
+        "scope": { "enum": ["global", "application"], "description": "Where the expectation holds. global: between any two datasets that hold the concept, whatever application they belong to. application: between the instances of one application (its databases for each site, region or tenant), and not between different applications." },
+        "expectation": { "enum": ["identical", "normalized", "partial", "instance-specific", "unrestricted"], "description": "What is expected within the scope. On an entity or a value-set it is about its records; on a property or a dimension it is about that one field, and it overrides the entity's. identical: equal values. normalized: equal once text is trimmed, each run of whitespace is one space, and case is folded. partial (entity or value-set only): a record may be present in some instances and absent from others; on the records that several instances hold, each property follows its own expectation, and one with none is identical. instance-specific: the values are expected to differ. unrestricted: not compared." }
+      }
+    },
     "concept": {
       "type": "object",
       "additionalProperties": false,
@@ -166,7 +176,7 @@
         "id": { "$ref": "#/$defs/conceptId" },
         "kind": { "enum": ["entity", "property", "measure", "dimension", "value-set"] },
         "of": { "$ref": "#/$defs/conceptRef", "description": "The entity or value-set concept this one belongs to: a property, dimension or measure of it, or (for an entity) a part of it." },
-        "extends": { "$ref": "#/$defs/conceptRef", "description": "Is a kind of: the concept this one specialises. Joins compatible kinds only (entity or value-set -> entity or value-set, measure -> measure, property or dimension -> property or dimension). Inherits synonyms (the parent's labels count as synonyms), unit, values-of and units-of when this concept has none of its own. Never inherits values." },
+        "extends": { "$ref": "#/$defs/conceptRef", "description": "Is a kind of: the concept this one specialises. Joins compatible kinds only (entity or value-set -> entity or value-set, measure -> measure, property or dimension -> property or dimension). Inherits synonyms (the parent's labels count as synonyms), unit, values-of, units-of, data-role and consistency, each when this concept has none of its own. Never inherits values." },
         "values-of": { "$ref": "#/$defs/conceptRef", "description": "The values of this property or dimension are instances of that entity or value-set concept (billing-country: values-of country). Its known values are that concept's values." },
         "units-of": { "$ref": "#/$defs/conceptRef", "description": "Amounts are expressed in a unit that is an instance of that entity or value-set concept (money-amount: units-of currency). The unit then names exactly one of that concept's values." },
         "labels": { "$ref": "#/$defs/labels" },
@@ -177,6 +187,8 @@
         "complete": { "type": "boolean", "description": "Only on a value-set: true when the list is all the values there are (the days of the week). A stored value that matches nothing is then an error; without it, it is reported as unknown." },
         "measure": { "$ref": "#/$defs/measure" },
         "source": { "$ref": "#/$defs/fileId", "description": "Provenance: id of an entry in sources, when the data comes from outside the dataset. Allowed on any kind." },
+        "data-role": { "enum": ["reference", "master", "configuration", "transactional", "event"], "description": "Only on an entity or a value-set: what its records are. reference: lookup data and controlled vocabularies (countries, currencies). master: the core things a business keeps records of (products, customers). configuration: settings of an application or a business. transactional: business transactions and the operational records they leave (orders, invoices, payments). event: events, logs and audit records. A concept without one is not classified. Independent of consistency: reference data that differs by region is reference with expectation instance-specific." },
+        "consistency": { "$ref": "#/$defs/consistency", "description": "On an entity, a value-set, a property or a dimension, never on a measure: where its data is expected to agree between datasets." },
         "bindings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/binding" } }
       },
       "allOf": [
@@ -206,6 +218,18 @@
             "not": { "required": ["values-of"] },
             "properties": { "bindings": { "type": "array", "items": { "type": "object", "properties": { "role": { "const": "value" } } } } }
           }
+        },
+        {
+          "if": { "properties": { "kind": { "enum": ["property", "dimension", "measure"] } } },
+          "then": { "not": { "required": ["data-role"] } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "measure" } } },
+          "then": { "not": { "required": ["consistency"] } }
+        },
+        {
+          "if": { "properties": { "kind": { "enum": ["property", "dimension"] } } },
+          "then": { "properties": { "consistency": { "type": "object", "properties": { "expectation": { "not": { "const": "partial" } } } } } }
         },
         {
           "if": { "properties": { "kind": { "enum": ["property", "dimension"] } } },

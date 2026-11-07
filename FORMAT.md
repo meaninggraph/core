@@ -11,8 +11,8 @@ schema wins and this page has a bug. The reference checker is
 There are two formats, and a reader that knows both reads both:
 
 - `meaning/draft-2` (this page) is the newer one: the kind `property`, the
-  binding key `field:`, the roles `instances` and `reference`, and the kind
-  `value-set`.
+  binding key `field:`, the roles `instances` and `reference`, the kind
+  `value-set`, and the keys `data-role` and `consistency`.
 - `meaning/draft-1` is the earlier one, with its own schema,
   [`meaning.schema.json`](meaning.schema.json). [How draft 1 differs](#how-draft-1-differs)
   says exactly where. A reader reads it in full and reports one notice for each
@@ -33,8 +33,9 @@ fields.
 Decisions about this format are recorded in
 [`spec/decisions/`](spec/decisions/README.md):
 [0001](spec/decisions/0001-derived-links-and-two-role-names.md),
-[0002](spec/decisions/0002-kind-property-binding-key-field-and-the-format-identifier.md)
-and [0003](spec/decisions/0003-value-sets.md). A decision changes this page only
+[0002](spec/decisions/0002-kind-property-binding-key-field-and-the-format-identifier.md),
+[0003](spec/decisions/0003-value-sets.md) and
+[0004](spec/decisions/0004-data-roles-and-consistency.md). A decision changes this page only
 when the page is changed to match it. The approval of draft 1 is recorded in the
 draft-1 format proposal in the repository `sneat-co/meaninggraph` (not
 published).
@@ -117,6 +118,7 @@ extends: meaning://github.com/meaninggraph/core/invoice?ref=<40-character commit
 | concept | `id`, `kind`, `labels` (with `en`), `description` |
 | concept of kind `measure` | `measure`, with `formula` inside it |
 | concept of kind `value-set` | `values` (at least one) |
+| `consistency` | `scope`, `expectation`, and nothing else |
 | binding | `model`, `role`; and `field` for every role except `instances` |
 | known value (`values`) | `id`, `labels` (with `en`) |
 | source (`sources`) | `id`, `provider`, `dataset` |
@@ -164,8 +166,8 @@ them, a value set is allowed too.
   or a dimension a property or a dimension. A chain of `extends` may not return
   to a concept it passed (checked through any repository the chain reaches). It
   inherits synonyms (the parent's labels count as synonyms), `unit`,
-  `values-of`, `units-of` and a measure's `aggregation`, each only when the
-  concept has none of its own. It never inherits `values`: an entity that
+  `values-of`, `units-of`, a measure's `aggregation`, `data-role` and
+  `consistency`, each only when the concept has none of its own. It never inherits `values`: an entity that
   extends a value set is not a list of the value set's values.
 - **`values-of`**: the values of this property or dimension are instances of
   that entity or value set (`billing-country` has `values-of: country`). It
@@ -202,7 +204,8 @@ the values known so far. `values` is allowed on a value set and nowhere else.
 
 - A value has `id` and `labels` (with `en`), and optionally `aliases`, `codes`
   and `retired`. A value set has at least one value. It may also carry
-  `synonyms`, `source`, `of`, `extends` and `complete`. It may not carry
+  `synonyms`, `source`, `of`, `extends`, `complete`, `data-role` and
+  `consistency`. It may not carry
   `values-of`, `units-of`, `unit`, `measure` or `bindings`.
 - A value set **extends** a value set or an entity, and an entity may extend a
   value set. A value set is not a property, a dimension or a measure: a
@@ -260,6 +263,102 @@ the values known so far. `values` is allowed on a value set and nowhere else.
 Whether two concepts may share a synonym is not part of the format. This
 repository does not allow it within a language, unless one concept is a kind of
 the other; a language counts when the concept has a label or synonyms in it.
+
+## Data roles and consistency
+
+Two optional keys say how the data of a concept is expected to compare between
+datasets: what its records are (`data-role`) and where they must agree
+(`consistency`). A tool that compares the databases of one application, one per
+site, region or tenant, reads them as its defaults. They are reusable meaning,
+the same for every dataset that uses the concept: a meaning file never says
+which databases there are, which of them is authoritative, or what a comparison
+found.
+
+```yaml
+- id: country
+  kind: value-set
+  data-role: reference
+  consistency:
+    scope: global
+    expectation: identical
+- id: product
+  kind: entity
+  data-role: master
+  consistency:
+    scope: application
+    expectation: partial
+- id: product-description
+  kind: property
+  of: product
+  consistency:
+    scope: application
+    expectation: normalized
+```
+
+(Labels, descriptions and values are left out of the example.)
+
+**`data-role`**, on an entity or a value set only, says what its records are:
+
+| Data role | Records |
+|---|---|
+| `reference` | lookup data and controlled vocabularies: countries, currencies |
+| `master` | the core things a business keeps records of: products, customers |
+| `configuration` | settings of an application or a business |
+| `transactional` | business transactions and the operational records they leave: orders, invoices, payments |
+| `event` | events, logs and audit records |
+
+A concept without `data-role` is not classified; there is no value for that.
+
+**`consistency`**, on an entity, a value set, a property or a dimension, never
+on a measure, holds two keys, both required:
+
+- `scope`, where the expectation holds. `global`: between any two datasets that
+  hold the concept, whatever application they belong to. `application`: between
+  the instances of one application (databases of one design that a deployment
+  runs once per site, region or tenant), and not between different
+  applications. Which datasets are instances of one application is for the tool
+  to say.
+- `expectation`, what is expected within the scope:
+
+| Expectation | On an entity or a value set: its records | On a property or a dimension: that one field |
+|---|---|---|
+| `identical` | every instance holds the same records, with equal values | equal in every instance |
+| `normalized` | as `identical`, once text is normalized | equal once normalized |
+| `partial` | a record may be present in some instances and absent from others; on the records that several instances hold, each property follows its own expectation | not allowed |
+| `instance-specific` | the values are expected to differ between instances | expected to differ |
+| `unrestricted` | not compared | not compared |
+
+Text is normalized by removing whitespace at its start and end, replacing each
+run of whitespace with one space and lower-casing it as labels are compared
+([Ids and case](#ids-and-case)). A value that is not text is compared as it is.
+
+- **Independent.** `data-role` says what the data is and `consistency` where it
+  must agree; neither implies the other. Reference data that differs by region
+  is `reference` with `expectation: instance-specific`.
+- **A field overrides its entity.** The consistency of a property or a
+  dimension applies to that one field and takes the place of the consistency of
+  the entity or value set its `of` names. A property or a dimension with none of
+  its own (stated or inherited through `extends`) follows that entity's, except
+  that the fields of a `partial` entity are `identical`: `partial` is about
+  which records exist, not about their values. One with no `of` and none of its
+  own has no expectation.
+- **Inheritance.** `extends` passes both keys on, each only when the concept has
+  none of its own; `consistency` passes as a whole, scope with expectation. A
+  part (an entity whose `of` names another entity) does not take the whole's.
+- **Matching records.** Records are matched between instances by what identifies
+  the thing, which the tool says; a key that each database generates for itself
+  need not be equal across instances.
+- **No deployment facts.** `consistency` never names an authoritative instance,
+  a tenant, an environment or a database: those are facts of one deployment,
+  owned by the tool that compares, as are a project's own rules for it and every
+  result of a comparison. How a tool lets a project's rules take the place of
+  these defaults is not part of the format.
+- **Measures.** A measure carries neither key: it is computed, not held by each
+  dataset.
+- **Draft 2 only.** Both keys belong to `meaning/draft-2`. This repository's
+  graph is in `meaning/draft-1` and carries neither until it is converted; the
+  example shows what `country` and `product` say then, and `currency` says what
+  `country` says.
 
 ## Words: synonyms and aliases
 
@@ -434,6 +533,7 @@ Draft 2 is draft 1 with the changes below. Everything else is the same.
 | Role names | `entity`, `foreign-key`; `instances` and `reference` are also accepted | `instances`, `reference`; `entity` and `foreign-key` are also accepted (a notice) |
 | Derived links | the rule above applies | the rule above applies |
 | Measure `inputs` | attributes and measures | properties and measures |
+| `data-role`, `consistency` | none (an error) | on the kinds in [Data roles and consistency](#data-roles-and-consistency) |
 
 The two role names `instances` and `reference` are valid in a draft-1 file too:
 they are new spellings no old file uses, so draft 1 gained them in place.
@@ -472,7 +572,10 @@ Errors:
     (in any language);
 12. a `source` that is not declared in the file;
 13. a binding to an unlisted module, a missing record type or field, another
-    repository, or one whose role does not fit the model.
+    repository, or one whose role does not fit the model;
+14. `data-role` on a concept that is not an entity or a value set (`data-role`),
+    and `consistency` on a measure or `expectation: partial` on a property or a
+    dimension (`consistency`), each reported beside the schema's refusal.
 
 Notices, which never change a verdict: `earlier-format` (one for each file of
 the checked graph that is in `meaning/draft-1`, none for a pinned graph; the file
