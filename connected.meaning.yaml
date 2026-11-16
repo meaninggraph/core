@@ -241,7 +241,14 @@ concepts:
     of: service
     labels:
       en: Service name
-    description: The name of the offered service.
+    synonyms:
+      en: [name of service]
+    description: >-
+      A service name is the human-readable name a provider gives to a service it
+      offers, such as "Broadband 500" or "Payroll processing". It names the
+      service; the service description says what the service does, the service
+      provider is the organization or person that provides it, and a product name
+      names a good rather than a service.
   - id: service-description
     kind: attribute
     of: service
